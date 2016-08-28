@@ -85,7 +85,6 @@ public struct CLIOption : Equatable {
         //check if the keys have been used
         if !keys.reduce(false, { (result, key) -> Bool in result || arguments.contains(key) }){
             if !environment.keys.reduce(false, { (result, key) -> Bool in
-                print("result: \(result) args: \(arguments.contains(key))")
                 return result || keys.contains(key) }) && defaultValue == nil {
                 return nil
             }
