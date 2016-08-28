@@ -8,10 +8,10 @@
 
 import Foundation
 
-enum CLIRunnableError: Error, CustomStringConvertible {
+public enum CLIRunnableError: Error, CustomStringConvertible {
     case missingRequiredArgument(keys:[String])
     case missingRequiredValue(keys:[String])
-    var description : String {
+    public var description : String {
         get {
             switch (self) {
             case let .missingRequiredArgument(keys): return String(describing: keys)
@@ -21,7 +21,7 @@ enum CLIRunnableError: Error, CustomStringConvertible {
     }
 }
 
-protocol CLIRunnable {
+public protocol CLIRunnable {
     var description: String? { get }//include "usage: ..." here if you want
     var cliOptionGroups: [CLIOptionGroup] { get }
 }

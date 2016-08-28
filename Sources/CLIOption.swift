@@ -77,7 +77,7 @@ public struct CLIOption : Equatable {
             optionalArguments?.append(argument)
         }
     }
-    func validateKeys(arguments:[String], environment:[String:String]) throws -> CLIOption? {
+    public func validateKeys(arguments:[String], environment:[String:String]) throws -> CLIOption? {
         //check if the keys have been used
         if !keys.reduce(false, { (result, key) -> Bool in result || arguments.contains(key) }){
             if !environment.keys.reduce(false, { (result, key) -> Bool in
