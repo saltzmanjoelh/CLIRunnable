@@ -9,10 +9,14 @@
 import Foundation
 
 public struct CLIOptionGroup {
-    var description: String?
-    var options: [CLIOption]
-    func filterInvalidKeys(arguments:[String], environment:[String:String]) throws -> [CLIOption] {
+    public var description: String?
+    public var options: [CLIOption]
+    public func filterInvalidKeys(arguments:[String], environment:[String:String]) throws -> [CLIOption] {
         return try options.flatMap{ try $0.validateKeys(arguments: arguments, environment: environment) }
+    }
+    public init(description:String, options:[CLIOption]){
+        self.description = description
+        self.options = options
     }
 }
 public struct CLIOption : Equatable {
