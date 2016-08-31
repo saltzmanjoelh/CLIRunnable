@@ -1,17 +1,36 @@
 import XCTest
-@testable import CLIRunnable
+@testable import CliRunnable
 
-struct FetchPackagesOption {
-    static let command          = CLIOption(keys:["custom-command"],
-                                            description:"Fetch the package dependencies via 'swift package fetch'",
-                                            requiresValue: false)
-}
-
-class CLIRunnableTests: XCTestCase {
+class CliRunnableTests: XCTestCase {
+    
+    struct App : CliRunnable {
+        var description: String? = "App Description"
+        public var cliOptionGroups: [CliOptionGroup]
+        static let usageStr = "app command [options]"
+        public func detailedHelp(option: CliOption) -> [HelpEntry] {
+            return [HelpEntry(description:"")]
+        }
+        public func usage(option: CliOption?) -> String? {
+            return App.usageStr
+        }
+        
+        var command = CliOption(keys:["test-command"], description:"Test Command", requiresValue:false)
+        let option = CliOption(keys:["-o", "--option"], description:"Some Option", requiresValue:false)
+        let secondaryOption = CliOption(keys:["-a", "--alternate-option"], description:"Alternate Option", requiresValue:false)
+        var group = CliOptionGroup(description:"Commands Group:")
+        public init(){
+            description = "App Description"
+            command.add(argument: option)
+            command.add(argument: secondaryOption)
+            group.options.append(command)
+            cliOptionGroups = [group]
+        }
+        
+    }
     
     func testValidateArgumentKeys() {
         do{
-            let option = CLIOption(keys:[UUID().uuidString])
+            let option = CliOption(keys:[UUID().uuidString], description:"")
             
             let result = try option.validateKeys(arguments: option.keys, environment: ["":""])
             
@@ -23,7 +42,7 @@ class CLIRunnableTests: XCTestCase {
     }
     func testValidateArgumentKeys_failure() {
         do{
-            let option = CLIOption(keys:[UUID().uuidString])
+            let option = CliOption(keys:[UUID().uuidString], description:"")
             
             let result = try option.validateKeys(arguments: [""], environment: ["":""])
             
@@ -35,7 +54,7 @@ class CLIRunnableTests: XCTestCase {
     }
     func testValidateEnvironmentKeys() {
         do{
-            let option = CLIOption(keys:[UUID().uuidString])
+            let option = CliOption(keys:[UUID().uuidString], description:"")
             
             let result = try option.validateKeys(arguments:[""], environment: [option.keys.first!:"value"])
             
@@ -47,7 +66,7 @@ class CLIRunnableTests: XCTestCase {
     }
     func testValidateEnvironmentKeys_failure() {
         do{
-            let option = CLIOption(keys:[UUID().uuidString])
+            let option = CliOption(keys:[UUID().uuidString], description:"")
             
             let result = try option.validateKeys(arguments:[""], environment: ["":""])
             
@@ -59,7 +78,7 @@ class CLIRunnableTests: XCTestCase {
     }
     func testDefaultKey() {
         do{
-            let option = CLIOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
+            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
             
             let result = try option.validateKeys(arguments:[""], environment: ["":""])
             
@@ -72,7 +91,7 @@ class CLIRunnableTests: XCTestCase {
     
     func testParseRootValue(){
         do{
-            let option = CLIOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
+            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
             let value = UUID().uuidString
             
             let result = try option.parseValues(using:option.keys, arguments:[option.keys.first!,value], environment: ["":""])
@@ -85,8 +104,8 @@ class CLIRunnableTests: XCTestCase {
     }
     func testParseRootValueWithSecondayOption(){
         do{
-            let option = CLIOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
-            let secondaryOption = CLIOption(keys:[UUID().uuidString], description:"", requiresValue:false, defaultValue:"secondary")
+            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
+            let secondaryOption = CliOption(keys:[UUID().uuidString], description:"", requiresValue:false, defaultValue:"secondary")
             let value = UUID().uuidString
             
             let result = try option.parseValues(using:option.keys+secondaryOption.keys, arguments:[option.keys.first!,value], environment: ["":""])
@@ -99,7 +118,7 @@ class CLIRunnableTests: XCTestCase {
     }
     func testEnvironmentValues(){
         do{
-            let option = CLIOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
+            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
             let value = UUID().uuidString
             
             let result = try option.parseValues(using:option.keys, arguments:[""], environment: [option.keys.first!:value])
@@ -112,7 +131,7 @@ class CLIRunnableTests: XCTestCase {
     }
     func testParseDefaultValue(){
         do{
-            let option = CLIOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"defaultValue")
+            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"defaultValue")
             
             let result = try option.parseValues(using:option.keys, arguments:[""], environment: ["":""])
             
@@ -125,7 +144,7 @@ class CLIRunnableTests: XCTestCase {
     
     func testParseMissingRequiredValue(){
         do{
-            let option = CLIOption(keys:[UUID().uuidString], description:"", requiresValue:true)
+            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true)
             
             let _ = try option.parseValues(using:option.keys, arguments:[""], environment: ["":""])
             
@@ -137,8 +156,8 @@ class CLIRunnableTests: XCTestCase {
     }
     func testParseMutlipleValues(){
         do{
-            let option = CLIOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
-            let secondaryOption = CLIOption(keys:[UUID().uuidString], description:"", requiresValue:false, defaultValue:"secondary")
+            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
+            let secondaryOption = CliOption(keys:[UUID().uuidString], description:"", requiresValue:false, defaultValue:"secondary")
             let value1 = UUID().uuidString
             let value2 = UUID().uuidString
             
@@ -150,9 +169,58 @@ class CLIRunnableTests: XCTestCase {
             XCTFail("\(e)")
         }
     }
-    
+    func testHelpString(){
+        let app = App()
+        
+        let help = app.helpString(with: app.helpEntries())
+        
+        XCTAssertTrue(help.contains(app.description!))
+        XCTAssertTrue(help.contains(app.group.description))
+        XCTAssertTrue(help.contains(app.command.keys.first!))
+        XCTAssertTrue(help.contains(App.usageStr))
+    }
+    func testDetailedHelpString() {
+        let app = App()
+        
+        let help = app.helpString(with: app.detailedHelpEntries(option: app.command))
+        
+        XCTAssertTrue(help.contains(App.usageStr))
+        XCTAssertTrue(help.contains(app.command.description))
+        XCTAssertTrue(help.contains(app.option.keys.first!))
+        XCTAssertTrue(help.contains(app.secondaryOption.keys.first!))
+    }
 
-    static var allTests : [(String, (CLIRunnableTests) -> () throws -> Void)] {
+    //TODO: test if we add the full help feature, otherwise sub options aren't used
+/*    func testColumnLength() {
+        let app = App()
+        let helpEntries = app.detailedHelpEntries(option: app.command)
+        
+        let length = helpEntries.last?.columnLength()
+        
+        XCTAssertEqual(length, helpEntries.last.)
+    }
+    func testStringValue() {
+        
+    }
+ */
+    func testParseHelpOption_nil() {
+        let app = App()
+        let arguments = ["/path/to/app", "app"]
+        
+        let option = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
+        
+        XCTAssertNil(option)
+    }
+    func testParseHelpOption() {
+        let app = App()
+        let arguments = ["/path/to/app", "app", app.command.keys.last!, "help"]
+        
+        let option = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
+        
+        XCTAssertEqual(option, app.command)
+    }
+    
+    static var allTests : [(String, (CliRunnableTests) -> () throws -> Void)] {
         return [
             ("testValidateArgumentKeys", testValidateArgumentKeys),
         ]
