@@ -3,15 +3,16 @@ import XCTest
 
 class CliRunnableTests: XCTestCase {
     
+    
+    
     struct App : CliRunnable {
-        var description: String? = "App Description"
+        var description: String? = "App Description\n"
+        public let appUsage = "app COMMAND [OPTIONS]\n"
+        public let testCommandUsage = "app test-command [OPTIONS]\n"
+        
         public var cliOptionGroups: [CliOptionGroup]
-        static let usageStr = "app command [options]"
-        public func detailedHelp(option: CliOption) -> [HelpEntry] {
-            return [HelpEntry(description:"")]
-        }
         public func usage(option: CliOption?) -> String? {
-            return App.usageStr
+            return option != nil ? testCommandUsage : appUsage
         }
         
         var command = CliOption(keys:["test-command"], description:"Test Command", requiresValue:false)
@@ -177,14 +178,14 @@ class CliRunnableTests: XCTestCase {
         XCTAssertTrue(help.contains(app.description!))
         XCTAssertTrue(help.contains(app.group.description))
         XCTAssertTrue(help.contains(app.command.keys.first!))
-        XCTAssertTrue(help.contains(App.usageStr))
+        XCTAssertTrue(help.contains(app.appUsage))
     }
     func testDetailedHelpString() {
         let app = App()
         
         let help = app.helpString(with: app.detailedHelpEntries(option: app.command))
         
-        XCTAssertTrue(help.contains(App.usageStr))
+        XCTAssertTrue(help.contains(app.testCommandUsage))
         XCTAssertTrue(help.contains(app.command.description))
         XCTAssertTrue(help.contains(app.option.keys.first!))
         XCTAssertTrue(help.contains(app.secondaryOption.keys.first!))
