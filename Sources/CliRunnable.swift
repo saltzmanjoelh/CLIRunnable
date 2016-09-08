@@ -27,7 +27,7 @@ public protocol CliRunnable: Helpable {
 }
 extension CliRunnable {
     
-    func helpEntries() -> [HelpEntry] {
+    public func helpEntries() -> [HelpEntry] {
         var entries = [HelpEntry]()
         if let appDescription = description {
             entries.append(HelpEntry(description:appDescription))
@@ -39,7 +39,7 @@ extension CliRunnable {
         
         return entries
     }
-    func detailedHelpEntries(option:CliOption) -> [HelpEntry] {
+    public func detailedHelpEntries(option:CliOption) -> [HelpEntry] {
         var helpEntries = [HelpEntry]()
         if let optionUsage = usage(option: option) {
             helpEntries.append(HelpEntry(description: optionUsage))
