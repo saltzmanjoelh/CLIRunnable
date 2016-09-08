@@ -76,13 +76,32 @@ Custom Command
 ```
 
 ###CliOptionGroup
-
-You can group options together in a CliOptionGroup if you want to create to group related commands together for the printed help
+if you want to group related commands together for the printed help, use the CliOptionGroup
 
 ```
-CliOptionGroup(description:"Custom Commands:")
-var command = CliOption(keys:["custom-command"], description:"Do something custom", requiresValue:false)
-var otherCommand = CliOption(keys:["other-custom-command"], description:"Custom Command", requiresValue:false)
+var psCommand = CliOption(keys:["ps"], description:"Process Status", requiresValue:false)
+var lsCommand = CliOption(keys:["ls"], description:"List Directory Contents", requiresValue:false)
+CliOptionGroup(description:"BSD General Commands:", options: [psCommand, lsCommand])
+
+var sshCommand = CliOption(keys:["ssh"], description:"OpenSSH SSH client (remote login program)")
+var scpCommand = CliOption(keys:["sap"], description:"Secure copy (remote file copy program)")
+CliOptionGroup(description:"SSH Commands:", options: [sshCommand, scpCommand])
+```
+
+`app --help`
+
+```
+App Description
+app COMMAND [OPTIONS]
+
+BSD General Commands:
+ps	Process Status
+ls	List Directory Contents
+
+
+SSH Commands:
+ssh	OpenSSH SSH client (remote login program)
+scp	Secure copy (remote file copy program)
 ```
 
 
