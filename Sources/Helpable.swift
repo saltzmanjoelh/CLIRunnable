@@ -11,7 +11,7 @@ import Foundation
 public protocol Helpable {
     func helpEntries() -> [HelpEntry]
     func detailedHelpEntries(option:CliOption) -> [HelpEntry]
-    func usage(option:CliOption?) -> String?
+    var appUsage: String? { get }
 }
 extension Helpable {
     public func helpString(with helpEntries:[HelpEntry]) -> String {

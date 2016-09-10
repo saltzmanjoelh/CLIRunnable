@@ -29,6 +29,7 @@ public struct CliOptionGroup {
 public struct CliOption : Equatable {
     public var keys: [String]
     public var description: String
+    public var usage: String?
     public var requiredArguments: [CliOption]?
     public var optionalArguments: [CliOption]?
     public var requiresValue: Bool = true //as in if the key is -a does it require a value after it (ps `-a` does not require a value)
@@ -36,12 +37,19 @@ public struct CliOption : Equatable {
     public var values: [String]?
     public var action: ((CliOption) throws -> Void)?
     
-    public init(keys:[String], description:String, requiresValue:Bool = true, defaultValue:String? = nil) {
+    public init(keys:[String], description:String, usage:String) {
+        self.keys = keys
+        self.description = description
+        self.usage = usage
+    }
+    public init(keys:[String], description:String, requiresValue:Bool = true, defaultValue:String? = nil, usage:String? = nil) {
         self.keys = keys
         self.description = description
         self.requiresValue = requiresValue
         self.defaultValue = defaultValue
+        self.usage = usage
     }
+    
     
     public var allKeys: [String] {
         get {

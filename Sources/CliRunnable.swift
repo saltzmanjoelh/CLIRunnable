@@ -32,7 +32,7 @@ extension CliRunnable {
         if let appDescription = description {
             entries.append(HelpEntry(description:appDescription))
         }
-        if let appUsage = usage(option: nil) {
+        if let appUsage = self.appUsage {
             entries.append(HelpEntry(description: appUsage))
         }
         entries += cliOptionGroups.map{ HelpEntry(with: $0) }
@@ -41,11 +41,11 @@ extension CliRunnable {
     }
     public func detailedHelpEntries(option:CliOption) -> [HelpEntry] {
         var helpEntries = [HelpEntry]()
-        if let optionUsage = usage(option: option) {
+        if let optionUsage = option.usage {
             helpEntries.append(HelpEntry(description: optionUsage))
         }
         
-        helpEntries.append(HelpEntry(description:option.description))
+        helpEntries.append(HelpEntry(description:"\(option.description)\n"))
         if let requiredArguments = option.requiredArguments {
             helpEntries += requiredArguments.map{ HelpEntry(with: $0) }
         }
