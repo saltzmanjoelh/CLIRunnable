@@ -6,17 +6,16 @@ class CliRunnableTests: XCTestCase {
     
     
     struct App : CliRunnable {
-        var description: String? = "App Description"
+        var description: String? = "My CliRunnable App's description"
         public var appUsage: String? = "app COMMAND [OPTIONS]"
         
         public var cliOptionGroups: [CliOptionGroup]
         
-        var command = CliOption(keys:["test-command"], description:"Test Command", requiresValue:false, defaultValue:nil, usage: "app test-command [OPTIONS]")
+        var command = CliOption(keys:["test-command"], description:"Test a custom command", requiresValue:false, defaultValue:nil, usage: "app test-command [OPTIONS]")
         let option = CliOption(keys:["-o", "--option"], description:"Some Option", requiresValue:false)
         let secondaryOption = CliOption(keys:["-a", "--alternate-option"], description:"Alternate Option", requiresValue:false)
         var group = CliOptionGroup(description:"Commands Group:")
         public init(){
-            description = "App Description"
             command.add(argument: option)
             command.add(argument: secondaryOption)
             group.options.append(command)
@@ -170,6 +169,7 @@ class CliRunnableTests: XCTestCase {
         let app = App()
         
         let help = app.helpString(with: app.helpEntries())
+        print(help)
         
         XCTAssertTrue(help.contains(app.description!))
         XCTAssertTrue(help.contains(app.group.description))
@@ -181,6 +181,7 @@ class CliRunnableTests: XCTestCase {
         
         let help = app.helpString(with: app.detailedHelpEntries(option: app.command))
         print(help)
+        
         XCTAssertTrue(help.contains(app.command.usage!))
         XCTAssertTrue(help.contains(app.command.description))
         XCTAssertTrue(help.contains(app.option.keys.first!))

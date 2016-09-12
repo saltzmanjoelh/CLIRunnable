@@ -2,7 +2,7 @@
 //  HelpEntry.swift
 //  CliRunnable
 //
-//  Created by asdf on 8/28/16.
+//  Created by Joel Saltzman on 8/28/16.
 //
 //
 
