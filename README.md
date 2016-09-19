@@ -11,7 +11,7 @@ CliOption(keys:["-o", "--option"], description:"Some Option", requiresValue:fals
 
 This gives your command line application the ability to add some options when you execute your application.
 
-`app -o` or `app --option`
+`app -o` or `app --option`   
 
 #####CliOption - requiresValue
 

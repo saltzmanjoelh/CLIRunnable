@@ -41,17 +41,12 @@ extension CliRunnable {
     }
     public func detailedHelpEntries(option:CliOption) -> [HelpEntry] {
         var helpEntries = [HelpEntry]()
+        //include the usage before the option
         if let optionUsage = option.usage {
             helpEntries.append(HelpEntry(description: "Usage: \(optionUsage)\n"))
         }
-        
-        helpEntries.append(HelpEntry(description:"\(option.description)\n"))
-        if let requiredArguments = option.requiredArguments {
-            helpEntries += requiredArguments.map{ HelpEntry(with: $0) }
-        }
-        if let optionalArguments = option.optionalArguments {
-            helpEntries += optionalArguments.map{ HelpEntry(with: $0) }
-        }
+        //add the option, it's required and optional args are added automatically
+        helpEntries.append(HelpEntry(with: option))
         return helpEntries
     }
     public func helpKeys() -> [String] {

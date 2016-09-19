@@ -12,7 +12,7 @@ class CliRunnableTests: XCTestCase {
         public var cliOptionGroups: [CliOptionGroup]
         
         var command = CliOption(keys:["test-command"], description:"Test a custom command", requiresValue:false, defaultValue:nil, usage: "app test-command [OPTIONS]")
-        let option = CliOption(keys:["-o", "--option"], description:"Some Option", requiresValue:false)
+        let option = CliOption(keys:["-o", "--option"], description:"Some Option", requiresValue:false, defaultValue: "default_value")
         let secondaryOption = CliOption(keys:["-a", "--alternate-option"], description:"Alternate Option", requiresValue:false)
         var group = CliOptionGroup(description:"Commands Group:")
         public init(){
@@ -185,6 +185,7 @@ class CliRunnableTests: XCTestCase {
         XCTAssertTrue(help.contains(app.command.usage!))
         XCTAssertTrue(help.contains(app.command.description))
         XCTAssertTrue(help.contains(app.option.keys.first!))
+        XCTAssertTrue(help.contains(app.option.defaultValue!))
         XCTAssertTrue(help.contains(app.secondaryOption.keys.first!))
     }
 

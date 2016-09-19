@@ -68,15 +68,25 @@ public struct HelpEntry {
             self.options = optionEntries
         }
     }
-    public init(with option:CliOption, options:[CliOption]? = nil) {
+    public init(with option:CliOption) {
         self.value = option.keys.joined(separator: ", ")
-        self.description = option.description
-        if let subOptions = options {
+        var description = "\(option.description)."
+        if let defaultValue = option.defaultValue {
+            description += " Defaults to: \(defaultValue)."
+        }
+        self.description = description
+        var subOptions = [CliOption]()
+        if let requiredArguments = option.requiredArguments {
+            subOptions += requiredArguments
+        }
+        if let optionalArguments = option.optionalArguments {
+            subOptions += optionalArguments
+        }
+        if subOptions.count > 0 {
             let optionEntries = subOptions.map{ HelpEntry(with: $0) }
             if optionEntries.count > 0 {
                 self.options = optionEntries
             }
         }
-        
     }
 }
