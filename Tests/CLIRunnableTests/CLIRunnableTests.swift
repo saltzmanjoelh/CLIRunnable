@@ -26,7 +26,7 @@ class CliRunnableTests: XCTestCase {
     
     func testValidateArgumentKeys() {
         do{
-            let option = CliOption(keys:[UUID().uuidString], description:"")
+            let option = CliOption(keys:[UUID().uuidString.lowercased()], description:"")
             
             let result = try option.validateKeys(arguments: option.keys, environment: ["":""])
             
@@ -72,7 +72,7 @@ class CliRunnableTests: XCTestCase {
             XCTFail("\(e)")
         }
     }
-    func testDefaultKey() {
+    func testValidateKeyWithDefaultValue() {
         do{
             let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
             
@@ -85,9 +85,9 @@ class CliRunnableTests: XCTestCase {
         }
     }
     
-    func testParseRootValue(){
+    func testParseOption(){
         do{
-            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
+            let option = CliOption(keys:[UUID().uuidString.lowercased()], description:"", requiresValue:true)
             let value = UUID().uuidString
             
             let result = try option.parseValues(using:option.keys, arguments:[option.keys.first!,value], environment: ["":""])
@@ -98,13 +98,14 @@ class CliRunnableTests: XCTestCase {
             XCTFail("\(e)")
         }
     }
-    func testParseRootValueWithSecondayOption(){
+    
+    func testParseSecondayOption(){
         do{
-            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
-            let secondaryOption = CliOption(keys:[UUID().uuidString], description:"", requiresValue:false, defaultValue:"secondary")
+            let option = CliOption(keys:["-s", "-secondary"], description:"secondary", requiresValue:true)
             let value = UUID().uuidString
             
-            let result = try option.parseValues(using:option.keys+secondaryOption.keys, arguments:[option.keys.first!,value], environment: ["":""])
+            //root -secondary value
+            let result = try option.parseValues(using: option.keys, arguments:["root-command", "-secondary", value], environment: ["":""])
             
             XCTAssertEqual(result.values?.first, value)
             
@@ -114,7 +115,7 @@ class CliRunnableTests: XCTestCase {
     }
     func testEnvironmentValues(){
         do{
-            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
+            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true)
             let value = UUID().uuidString
             
             let result = try option.parseValues(using:option.keys, arguments:[""], environment: [option.keys.first!:value])
@@ -150,14 +151,13 @@ class CliRunnableTests: XCTestCase {
             
         }
     }
-    func testParseMutlipleValues(){
+    func testParseMutlipleArgumentValues(){
         do{
-            let option = CliOption(keys:[UUID().uuidString], description:"", requiresValue:true, defaultValue:"value")
-            let secondaryOption = CliOption(keys:[UUID().uuidString], description:"", requiresValue:false, defaultValue:"secondary")
+            let option = CliOption(keys:[UUID().uuidString.lowercased()], description:"", requiresValue:true)
             let value1 = UUID().uuidString
             let value2 = UUID().uuidString
             
-            let result = try option.parseValues(using:option.keys+secondaryOption.keys, arguments:[option.keys.first!,value1,value2], environment: ["":""])
+            let result = try option.parseValues(using:option.keys, arguments:[option.keys.first!,value1,value2], environment: ["":""])
             
             XCTAssertEqual(result.values!, [value1, value2])
             
@@ -165,6 +165,38 @@ class CliRunnableTests: XCTestCase {
             XCTFail("\(e)")
         }
     }
+    func testParseArgumentInListOfArguments() {
+        do{
+            let preOption = CliOption(keys:["pre-option"], description:"", requiresValue:true)
+            let option = CliOption(keys:["target-option"], description:"", requiresValue:true)
+            let postOption = CliOption(keys:["post-option"], description:"", requiresValue:true)
+            let value1 = UUID().uuidString
+            let value2 = UUID().uuidString
+            
+            let result = try option.parseValues(using:preOption.keys + option.keys + postOption.keys, arguments:[preOption.keys.first!, "preValue", option.keys.first!,value1,value2, postOption.keys.first!, "postValue"], environment: ["":""])
+            
+            XCTAssertEqual(result.values!, [value1, value2])
+            
+        } catch let e {
+            XCTFail("\(e)")
+        }
+    }
+    func testParseArgumentAtEndListOfArguments() {
+        do{
+            let preOption = CliOption(keys:["pre-option"], description:"", requiresValue:true)
+            let option = CliOption(keys:["target-option"], description:"", requiresValue:true)
+            let value1 = UUID().uuidString
+            let value2 = UUID().uuidString
+            
+            let result = try option.parseValues(using:preOption.keys + option.keys, arguments:[preOption.keys.first!, "preValue", option.keys.first!,value1,value2], environment: ["":""])
+            
+            XCTAssertEqual(result.values!, [value1, value2])
+            
+        } catch let e {
+            XCTFail("\(e)")
+        }
+    }
+    
     func testHelpString(){
         let app = App()
         

@@ -94,6 +94,7 @@ extension CliRunnable {
     public func parse(optionGroups:[CliOptionGroup], arguments:[String], environment:[String:String]) throws {
         let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
         let allKeys = options.flatMap{ $0.allKeys }
+        //we pass in allKeys as a list of possible delimiters so that we can parse out the CLIOption's keys from the list (delimiter1 value targetDelimiter value delimiter2)
         let parsedOptions = try options.map{try $0.parseValues(using:allKeys, arguments:arguments, environment:environment)}
         try parsedOptions.forEach{
             if let action = $0.action {

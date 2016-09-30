@@ -97,10 +97,10 @@ public struct CliOption : Equatable {
         }
     }
     public func validateKeys(arguments:[String], environment:[String:String]) throws -> CliOption? {
-        //check if the keys have been used
-        if !keys.reduce(false, { (result, key) -> Bool in result || arguments.contains(key) }){
+        //check if the keys have been used in the arguments or environment.
+        if !keys.reduce(false, { (result, key) -> Bool in result || arguments.contains(key.lowercased()) }){
             if !environment.keys.reduce(false, { (result, key) -> Bool in
-                return result || keys.contains(key) }) && defaultValue == nil {
+                return result || keys.contains(key.uppercased()) }) && defaultValue == nil {
                 return nil
             }
         }
@@ -125,18 +125,20 @@ public struct CliOption : Equatable {
     
     public func parseValues(using delimiters:[String], arguments:[String], environment:[String:String]) throws -> CliOption {
         var copy = self
-        //check args
-        if let start = arguments.index(where:{ keys.contains($0) }) {
-            let section = arguments[start..<arguments.count]
-            if let end = section.index(where:{ $0 != section.first && delimiters.contains($0) }) {
+        //find the first argument that matches one of this option's keys
+        if let start = arguments.index(where:{ $0.lowercased() == $0 && keys.contains($0) }) { //found one
+            let section = arguments[start..<arguments.count] //split the args from the found delimiter to the end of the args
+            //get all args from the start through until we find any other delimiter
+            if let end = section.index(where:{ $0 != section.first && $0.lowercased() == $0 && delimiters.contains($0) }) {
+                //found another delimiter (startDelimiter, value, value, anotherDelimiter)
                 copy.values = Array(section[start+1..<end])
             }else{
-                //didn't find a key scanning to the end, use all the rest
+                //didn't find a key scanning to the end, use all the rest (startDelimiter, value, value)
                 copy.values = Array(section[start+1..<section.endIndex])
             }
         }
-        //check environment
-        let envValues = keys.flatMap{ environment[$0] }
+        //check environment for UPPERCASED keys only
+        let envValues = keys.flatMap{ $0.uppercased() == $0 ? environment[$0] : nil }
         if envValues.count > 0 {
             copy.values = envValues
         }
