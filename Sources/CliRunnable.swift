@@ -22,6 +22,7 @@ public enum CliRunnableError: Error, CustomStringConvertible {
 }
 
 public protocol CliRunnable: Helpable {
+    var appName: String { get }
     var description: String? { get }//include "usage: ..." here if you want
     var cliOptionGroups: [CliOptionGroup] { get }
 }
@@ -37,6 +38,8 @@ extension CliRunnable {
         }
         entries += cliOptionGroups.map{ HelpEntry(with: $0) }
         
+        entries += [HelpEntry(description: "Run `\(appName) COMMAND (\(helpKeys().joined(separator: " or ")))` for more information on a command.")]
+        
         return entries
     }
     public func detailedHelpEntries(option:CliOption) -> [HelpEntry] {
@@ -46,27 +49,25 @@ extension CliRunnable {
             helpEntries.append(HelpEntry(description: "Usage: \(optionUsage)\n"))
         }
         //add the option, it's required and optional args are added automatically
-        helpEntries.append(HelpEntry(with: option))
+        helpEntries.append(HelpEntry(with: option, includeSubOptions: true))
         return helpEntries
-    }
-    public func helpKeys() -> [String] {
-        return ["--help", "help", "-h"]
     }
     public func parseHelpOption(cliOptionGroups:[CliOptionGroup], arguments: [String]) -> CliOption? {
         // /path/to/xchelper xchelper `fetch-packages` help
-        //make sure we 4 args and the last one is help
-        guard arguments.count == 4, helpKeys().contains(arguments.last!) else {
+        //make sure we 3 args and the last one is help
+        guard arguments.count == 3, helpKeys().contains(arguments.last!) else {
             return nil
         }
         //find the first root option (command) that matches the string
         return cliOptionGroups.flatMap{
-            if let option = $0.options.first(where: { $0.keys.contains(arguments[2]) }) {
+            if let option = $0.options.first(where: { $0.keys.contains(arguments[1]) }) {
                 return option
             }
             return nil
-        }.first
+            }.first
     }
     public func printHelp(cliOptionGroups:[CliOptionGroup], arguments: [String]) {
+        
         //check if they are asking for help on an option/command, [0] is run path, [1] is command
         if let helpOption = parseHelpOption(cliOptionGroups: cliOptionGroups, arguments: arguments) {
             print(helpString(with: detailedHelpEntries(option:helpOption)))

@@ -14,6 +14,10 @@ public protocol Helpable {
     var appUsage: String? { get }
 }
 extension Helpable {
+    public func helpKeys() -> [String] {
+        return ["--help", "help", "-h"]
+    }
+    
     public func helpString(with helpEntries:[HelpEntry]) -> String {
         let columnLength = helpEntries.reduce(0) { (maxLength, helpEntry) -> Int in
             let length = helpEntry.columnLength()
@@ -68,24 +72,26 @@ public struct HelpEntry {
             self.options = optionEntries
         }
     }
-    public init(with option:CliOption) {
+    public init(with option:CliOption, includeSubOptions: Bool = false) {
         self.value = option.keys.joined(separator: ", ")
-        var description = "\(option.description)."
+        var description = "\(option.description)"
         if let defaultValue = option.defaultValue {
-            description += " Defaults to: \(defaultValue)."
+            description += ". Defaults to: \(defaultValue)."
         }
         self.description = description
-        var subOptions = [CliOption]()
-        if let requiredArguments = option.requiredArguments {
-            subOptions += requiredArguments
-        }
-        if let optionalArguments = option.optionalArguments {
-            subOptions += optionalArguments
-        }
-        if subOptions.count > 0 {
-            let optionEntries = subOptions.map{ HelpEntry(with: $0) }
-            if optionEntries.count > 0 {
-                self.options = optionEntries
+        if includeSubOptions {
+            var subOptions = [CliOption]()
+            if let requiredArguments = option.requiredArguments {
+                subOptions += requiredArguments
+            }
+            if let optionalArguments = option.optionalArguments {
+                subOptions += optionalArguments
+            }
+            if subOptions.count > 0 {
+                let optionEntries = subOptions.map{ HelpEntry(with: $0) }
+                if optionEntries.count > 0 {
+                    self.options = optionEntries
+                }
             }
         }
     }
