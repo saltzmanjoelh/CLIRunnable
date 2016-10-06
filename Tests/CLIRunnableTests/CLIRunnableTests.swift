@@ -6,6 +6,7 @@ class CliRunnableTests: XCTestCase {
     
     
     struct App : CliRunnable {
+        var appName: String = "Test App"
         var description: String? = "My CliRunnable App's description"
         public var appUsage: String? = "app COMMAND [OPTIONS]"
         

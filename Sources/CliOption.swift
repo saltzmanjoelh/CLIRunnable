@@ -37,12 +37,7 @@ public struct CliOption : Equatable {
     public var values: [String]?
     public var action: ((CliOption) throws -> Void)?
     
-    public init(keys:[String], description:String, usage:String) {
-        self.keys = keys
-        self.description = description
-        self.usage = usage
-    }
-    public init(keys:[String], description:String, requiresValue:Bool = true, defaultValue:String? = nil, usage:String? = nil) {
+    public init(keys:[String], description:String, usage:String?, requiresValue:Bool, defaultValue:String?) {
         self.keys = keys
         self.description = description
         self.requiresValue = requiresValue
