@@ -72,22 +72,15 @@ extension CliRunnable {
         if let helpOption = parseHelpOption(cliOptionGroups: cliOptionGroups, arguments: arguments) {
             print(helpString(with: detailedHelpEntries(option:helpOption)))
         }else{
-            var entries = helpEntries();
-            if arguments.count > 1 {
-                let unknownOption = HelpEntry(description: "Unknown option '\(arguments[1])'\n")
-                entries.insert(unknownOption, at: 0)
-            }
-            print(helpString(with: entries))
+            print(helpString(with: helpEntries()))
         }
     }
     public func run(arguments:[String], environment:[String:String]) {
         do {
-            //            print(arguments)
-            //            print(String(describing:environment).components(separatedBy: ", ").joined(separator: "\n"))
             let optionGroups = cliOptionGroups
             let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
             
-            if options.count > 0, let lastArgument = arguments.last, !helpKeys().contains(lastArgument)  {
+            if options.count > 0, let lastArgument = arguments.last, !helpKeys().contains(lastArgument), lastArgument != arguments.first! {
                 try parse(optionGroups: optionGroups, arguments: arguments, environment: environment)
             } else {
                 printHelp(cliOptionGroups: optionGroups, arguments: arguments)
