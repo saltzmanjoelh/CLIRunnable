@@ -102,6 +102,7 @@ public struct CliOption : Equatable {
         if let requiredArgs = requiredArguments {
             for requiredOption in requiredArgs {
                 if try requiredOption.validateKeys(arguments: arguments, environment: environment) == nil {
+                    //TODO: have better error messages than "You didn't provide: ["-v", "--version", "GIT_TAG_VERSION"]", we need to know if it's a command or option
                     throw CliRunnableError.missingRequiredArgument(keys: requiredOption.keys)
                 }
             }
@@ -129,7 +130,10 @@ public struct CliOption : Equatable {
                 copy.values = Array(section[start+1..<end])
             }else{
                 //didn't find a key scanning to the end, use all the rest (startDelimiter, value, value)
-                copy.values = Array(section[start+1..<section.endIndex])
+                let endValues = Array(section[start+1..<section.endIndex])
+                if endValues.count > 0 {
+                    copy.values = endValues
+                }
             }
         }
         //check environment for UPPERCASED keys only

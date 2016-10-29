@@ -14,8 +14,8 @@ public enum CliRunnableError: Error, CustomStringConvertible {
     public var description : String {
         get {
             switch (self) {
-            case let .missingRequiredArgument(keys): return String(describing: keys)
-            case let .missingRequiredValue(keys): return String(describing: keys)
+            case let .missingRequiredArgument(keys): return "You didn't provide: "+String(describing: keys)
+            case let .missingRequiredValue(keys): return "You didn't provide a value for: "+String(describing: keys)
             }
         }
     }
@@ -38,7 +38,7 @@ extension CliRunnable {
         }
         entries += cliOptionGroups.map{ HelpEntry(with: $0) }
         
-        entries += [HelpEntry(description: "Run `\(appName) COMMAND (\(helpKeys().joined(separator: " or ")))` for more information on a command.")]
+        entries += [HelpEntry(description: "\nRun `\(appName) COMMAND (\(helpKeys().joined(separator: " or ")))` for more information on a command.")]
         
         return entries
     }
@@ -96,6 +96,7 @@ extension CliRunnable {
         let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
         let allKeys = options.flatMap{ $0.allKeys }
         //we pass in allKeys as a list of possible delimiters so that we can parse out the CLIOption's keys from the list (delimiter1 value targetDelimiter value delimiter2)
+        //        print("\(allKeys)")
         let parsedOptions = try options.map{try $0.parseValues(using:allKeys, arguments:arguments, environment:environment)}
         try parsedOptions.forEach{
             if let action = $0.action {
