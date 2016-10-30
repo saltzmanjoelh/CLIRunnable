@@ -260,6 +260,18 @@ class CliRunnableTests: XCTestCase {
         
         XCTAssertEqual(unknownKeys, [unknownKey])
     }
+    func testHandleUnknownKeys() {
+        do {
+            let app = App()
+            let unknownKey = "--foo-bar"
+            let arguments = ["/path/to/app", app.command.keys.last!, unknownKey]
+            
+            try app.handleUnknownKeys(arguments: arguments, options: [app.command])
+            XCTFail("Error should have been thrown.")
+        } catch _ {
+            
+        }
+    }
     
     static var allTests : [(String, (CliRunnableTests) -> () throws -> Void)] {
         return [

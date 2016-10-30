@@ -82,6 +82,8 @@ extension CliRunnable {
             let optionGroups = cliOptionGroups
             let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
             
+            try handleUnknownKeys(arguments: arguments, options: options)
+            
             if options.count > 0, let lastArgument = arguments.last, !helpKeys().contains(lastArgument), lastArgument != arguments.first! {
                 try parse(optionGroups: optionGroups, arguments: arguments, environment: environment)
             } else {
@@ -92,11 +94,8 @@ extension CliRunnable {
             print(String(describing: e))
         }
     }
-    //Iterate each CliOptionGroup's options and let them parse the args. If they find invalid args they (the CliOption) will throw.
-    //If they (the CliOption) are optional and aren't fulfiled, they will be filtered out
-    public func parse(optionGroups:[CliOptionGroup], arguments:[String], environment:[String:String]) throws {
-        //get all the valid keys
-        let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
+    
+    public func handleUnknownKeys(arguments:[String], options: [CliOption]) throws {
         let allKeys = options.flatMap{ $0.allKeys }
         let allValues = options.reduce([String]()){ $1.values != nil ? $0 + $1.values! : $0 }
         //if we have an unknown keys, throw error and show help
@@ -104,6 +103,15 @@ extension CliRunnable {
         if unknownKeys.count > 0 {
             throw CliRunnableError.unknownKeys(key: unknownKeys)
         }
+    }
+    
+    //Iterate each CliOptionGroup's options and let them parse the args. If they find invalid args they (the CliOption) will throw.
+    //If they (the CliOption) are optional and aren't fulfiled, they will be filtered out
+    public func parse(optionGroups:[CliOptionGroup], arguments:[String], environment:[String:String]) throws {
+        //get all the valid keys
+        let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
+        let allKeys = options.flatMap{ $0.allKeys }
+        
         //we pass in allKeys as a list of possible delimiters so that we can parse out the CLIOption's keys from the list (delimiter1 value targetDelimiter value delimiter2)
         //        print("\(allKeys)")
         let parsedOptions = try options.map{try $0.parseValues(using:allKeys, arguments:arguments, environment:environment)}
