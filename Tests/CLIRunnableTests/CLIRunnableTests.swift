@@ -254,9 +254,9 @@ class CliRunnableTests: XCTestCase {
     func testUnknownKey() {
         let app = App()
         let unknownKey = "--foo-bar"
-        let arguments = ["/path/to/app", app.command.keys.last!, unknownKey]
+        let arguments = ["/path/to/app", app.command.keys.last!, "value", unknownKey]
         
-        let unknownKeys = app.parseUnknownKeys(arguments: arguments, validKeys: [app.command.keys.last!])
+        let unknownKeys = app.parseUnknownKeys(arguments: arguments, validKeys: [app.command.keys.last!], values: ["value"])
         
         XCTAssertEqual(unknownKeys, [unknownKey])
     }

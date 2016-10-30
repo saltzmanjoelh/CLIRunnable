@@ -98,8 +98,9 @@ extension CliRunnable {
         //get all the valid keys
         let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
         let allKeys = options.flatMap{ $0.allKeys }
+        let allValues = options.reduce([String]()){ $1.values != nil ? $0 + $1.values! : $0 }
         //if we have an unknown keys, throw error and show help
-        let unknownKeys = parseUnknownKeys(arguments: arguments, validKeys: allKeys)
+        let unknownKeys = parseUnknownKeys(arguments: arguments, validKeys: allKeys, values: allValues)
         if unknownKeys.count > 0 {
             throw CliRunnableError.unknownKeys(key: unknownKeys)
         }
@@ -112,10 +113,12 @@ extension CliRunnable {
             }
         }
     }
-    func parseUnknownKeys(arguments: [String], validKeys: [String]) -> [String] {
+    func parseUnknownKeys(arguments: [String], validKeys: [String], values: [String]) -> [String] {
         //remove first arg from arguments, it's the path to the executable
-        //remove validKeys from arguments, anything remaining is unknown
-        let keys = arguments[1..<arguments.count]
-        return keys.filter{ !validKeys.contains($0) }
+        //remove validKeys from arguments
+        //remove values from arguments
+        //anything remaining is unknown
+        let keys = arguments[1..<arguments.count].filter{ !validKeys.contains($0) }
+        return keys.filter{ !values.contains($0) }
     }
 }
