@@ -11,11 +11,13 @@ import Foundation
 public enum CliRunnableError: Error, CustomStringConvertible {
     case missingRequiredArgument(keys:[String])
     case missingRequiredValue(keys:[String])
+    case unknownKeys(key: [String])
     public var description : String {
         get {
             switch (self) {
-            case let .missingRequiredArgument(keys): return "You didn't provide: "+String(describing: keys)
-            case let .missingRequiredValue(keys): return "You didn't provide a value for: "+String(describing: keys)
+                case let .missingRequiredArgument(keys): return "You didn't provide: "+String(describing: keys)
+                case let .missingRequiredValue(keys): return "You didn't provide a value for: "+String(describing: keys)
+                case let .unknownKeys(keys): return "Unknown keys: "+String(describing: keys)
             }
         }
     }
@@ -53,7 +55,7 @@ extension CliRunnable {
         return helpEntries
     }
     public func parseHelpOption(cliOptionGroups:[CliOptionGroup], arguments: [String]) -> CliOption? {
-        // /path/to/xchelper xchelper `fetch-packages` help
+        // /path/to/xchelper `fetch-packages` help
         //make sure we 3 args and the last one is help
         guard arguments.count == 3, helpKeys().contains(arguments.last!) else {
             return nil
@@ -93,8 +95,14 @@ extension CliRunnable {
     //Iterate each CliOptionGroup's options and let them parse the args. If they find invalid args they (the CliOption) will throw.
     //If they (the CliOption) are optional and aren't fulfiled, they will be filtered out
     public func parse(optionGroups:[CliOptionGroup], arguments:[String], environment:[String:String]) throws {
+        //get all the valid keys
         let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
         let allKeys = options.flatMap{ $0.allKeys }
+        //if we have an unknown keys, throw error and show help
+        let unknownKeys = parseUnknownKeys(arguments: arguments, validKeys: allKeys)
+        if unknownKeys.count > 0 {
+            throw CliRunnableError.unknownKeys(key: unknownKeys)
+        }
         //we pass in allKeys as a list of possible delimiters so that we can parse out the CLIOption's keys from the list (delimiter1 value targetDelimiter value delimiter2)
         //        print("\(allKeys)")
         let parsedOptions = try options.map{try $0.parseValues(using:allKeys, arguments:arguments, environment:environment)}
@@ -103,5 +111,11 @@ extension CliRunnable {
                 try action($0) //calling self.action?
             }
         }
+    }
+    func parseUnknownKeys(arguments: [String], validKeys: [String]) -> [String] {
+        //remove first arg from arguments, it's the path to the executable
+        //remove validKeys from arguments, anything remaining is unknown
+        let keys = arguments[1..<arguments.count]
+        return keys.filter{ !validKeys.contains($0) }
     }
 }
