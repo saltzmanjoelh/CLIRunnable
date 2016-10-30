@@ -96,9 +96,10 @@ public struct CliOption : Equatable {
         if !keys.reduce(false, { (result, key) -> Bool in result || arguments.contains(key.lowercased()) }){
             if !environment.keys.reduce(false, { (result, key) -> Bool in
                 return result || keys.contains(key.uppercased()) }) && defaultValue == nil {
-                return nil
+                return nil //this option wasn't used, remove it
             }
         }
+        //this option was used, make sure it has requiredArguments fulfilled
         if let requiredArgs = requiredArguments {
             for requiredOption in requiredArgs {
                 if try requiredOption.validateKeys(arguments: arguments, environment: environment) == nil {
@@ -107,6 +108,7 @@ public struct CliOption : Equatable {
                 }
             }
         }
+        //if it had any optional arguments, get them
         if let optionalArgs = optionalArguments {
             let validatedArgs = try optionalArgs.flatMap{ try $0.validateKeys(arguments: arguments, environment: environment) }
             if validatedArgs.count != optionalArgs.count {

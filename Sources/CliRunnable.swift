@@ -15,9 +15,9 @@ public enum CliRunnableError: Error, CustomStringConvertible {
     public var description : String {
         get {
             switch (self) {
-                case let .missingRequiredArgument(keys): return "You didn't provide: "+String(describing: keys)
-                case let .missingRequiredValue(keys): return "You didn't provide a value for: "+String(describing: keys)
-                case let .unknownKeys(keys): return "Unknown keys: "+String(describing: keys)
+            case let .missingRequiredArgument(keys): return "You didn't provide: "+String(describing: keys)
+            case let .missingRequiredValue(keys): return "You didn't provide a value for: "+String(describing: keys)
+            case let .unknownKeys(keys): return "Unknown keys: "+String(describing: keys)
             }
         }
     }
@@ -77,21 +77,21 @@ extension CliRunnable {
             print(helpString(with: helpEntries()))
         }
     }
-    public func run(arguments:[String], environment:[String:String]) {
-        do {
-            let optionGroups = cliOptionGroups
-            let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
-            
-            try handleUnknownKeys(arguments: arguments, options: options)
-            
-            if options.count > 0, let lastArgument = arguments.last, !helpKeys().contains(lastArgument), lastArgument != arguments.first! {
-                try parse(optionGroups: optionGroups, arguments: arguments, environment: environment)
-            } else {
-                printHelp(cliOptionGroups: optionGroups, arguments: arguments)
+    public func run(arguments:[String], environment:[String:String]) throws {
+        let optionGroups = cliOptionGroups
+        //the order should be?: find invalid keys, then Group->filterInvalidKeys which attaches values to options should happen and options with values are returned ie:  validateKeys
+        let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
+        
+        if options.count > 0, let lastArgument = arguments.last, !helpKeys().contains(lastArgument), lastArgument != arguments.first! {
+            let parsedOptions = try parse(optionGroups: optionGroups, arguments: arguments, environment: environment)
+            try handleUnknownKeys(arguments: arguments, options: parsedOptions)
+            try parsedOptions.forEach{
+                if let action = $0.action {
+                    try action($0) //calling self.action?
+                }
             }
-            
-        } catch let e {
-            print(String(describing: e))
+        } else {
+            printHelp(cliOptionGroups: optionGroups, arguments: arguments)
         }
     }
     
@@ -107,19 +107,14 @@ extension CliRunnable {
     
     //Iterate each CliOptionGroup's options and let them parse the args. If they find invalid args they (the CliOption) will throw.
     //If they (the CliOption) are optional and aren't fulfiled, they will be filtered out
-    public func parse(optionGroups:[CliOptionGroup], arguments:[String], environment:[String:String]) throws {
+    public func parse(optionGroups:[CliOptionGroup], arguments:[String], environment:[String:String]) throws -> [CliOption] {
         //get all the valid keys
         let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(arguments: arguments, environment: environment) }
         let allKeys = options.flatMap{ $0.allKeys }
         
         //we pass in allKeys as a list of possible delimiters so that we can parse out the CLIOption's keys from the list (delimiter1 value targetDelimiter value delimiter2)
         //        print("\(allKeys)")
-        let parsedOptions = try options.map{try $0.parseValues(using:allKeys, arguments:arguments, environment:environment)}
-        try parsedOptions.forEach{
-            if let action = $0.action {
-                try action($0) //calling self.action?
-            }
-        }
+        return try options.map{try $0.parseValues(using:allKeys, arguments:arguments, environment:environment)}
     }
     func parseUnknownKeys(arguments: [String], validKeys: [String], values: [String]) -> [String] {
         //remove first arg from arguments, it's the path to the executable

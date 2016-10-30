@@ -12,7 +12,7 @@ class CliRunnableTests: XCTestCase {
         
         public var cliOptionGroups: [CliOptionGroup]
         
-        var command = CliOption(keys:["test-command"], description:"Test a custom command", usage: "app test-command [OPTIONS]", requiresValue:false, defaultValue:nil)
+        var command = CliOption(keys:["test-command"], description:"Test a custom command", usage: "app test-command [OPTIONS]", requiresValue:true, defaultValue:nil)
         let option = CliOption(keys:["-o", "--option"], description:"Some Option", usage: nil, requiresValue:false, defaultValue: "default_value")
         let secondaryOption = CliOption(keys:["-a", "--alternate-option"], description:"Alternate Option", usage: nil, requiresValue:false, defaultValue: nil)
         var group = CliOptionGroup(description:"Commands Group:")
@@ -270,6 +270,18 @@ class CliRunnableTests: XCTestCase {
             XCTFail("Error should have been thrown.")
         } catch _ {
             
+        }
+    }
+    func testAppRun() {
+        do {
+            let app = App()
+            let unknownKey = "--foo-bar"
+            let arguments = ["/path/to/app", app.command.keys.last!, "value", unknownKey]
+            
+            try app.run(arguments: arguments, environment: [:])
+            
+        } catch let e {
+            XCTFail("Error: \(e)")
         }
     }
     
