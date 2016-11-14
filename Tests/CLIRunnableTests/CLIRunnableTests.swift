@@ -3,7 +3,11 @@ import XCTest
 
 class CliRunnableTests: XCTestCase {
     
-    
+    static var allTests : [(String, (CliRunnableTests) -> () throws -> Void)] {
+        return [
+            ("testValidateArgumentKeys", testValidateArgumentKeys),
+        ]
+    }
     
     struct App : CliRunnable {
         var appName: String = "Test App"
@@ -285,9 +289,23 @@ class CliRunnableTests: XCTestCase {
         }
     }
     
-    static var allTests : [(String, (CliRunnableTests) -> () throws -> Void)] {
-        return [
-            ("testValidateArgumentKeys", testValidateArgumentKeys),
-        ]
+    func testMissingRequireArguments(){
+        do {
+            var app = App()
+            var cmd = app.command
+            let option = CliOption(keys:["-o", "--option"], description:"Some Option", usage: nil, requiresValue:false, defaultValue: nil)
+            cmd.requiredArguments = [option]
+            app.group.options = [cmd]
+            app.cliOptionGroups = [app.group]
+            let arguments = ["/path/to/app", "test-command", "command-value"]
+            
+            try app.run(arguments: arguments, environment: [:])
+            
+            XCTFail("Required argument was missing and an error should have been thrown.")
+            
+        } catch _ {
+            //throw an error when a required arg is not provided
+        }
     }
+    
 }

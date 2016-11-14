@@ -97,7 +97,7 @@ extension CliRunnable {
     
     public func handleUnknownKeys(arguments:[String], options: [CliOption]) throws {
         let allKeys = options.flatMap{ $0.allKeys }
-        let allValues = options.reduce([String]()){ $1.values != nil ? $0 + $1.values! : $0 }
+        let allValues = options.flatMap{ $0.allValues }
         //if we have an unknown keys, throw error and show help
         let unknownKeys = parseUnknownKeys(arguments: arguments, validKeys: allKeys, values: allValues)
         if unknownKeys.count > 0 {

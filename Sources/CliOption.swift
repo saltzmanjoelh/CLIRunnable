@@ -58,6 +58,21 @@ public struct CliOption : Equatable {
             return allKeys
         }
     }
+    public var allValues: [String] {
+        get {
+            var allValues = [String]()
+            if let theValues = values {
+                allValues += theValues
+            }
+            if let reqArguments = requiredArguments {
+                allValues += reqArguments.flatMap{ $0.allValues }
+            }
+            if let optArguments = optionalArguments {
+                allValues += optArguments.flatMap{ $0.allValues }
+            }
+            return allValues
+        }
+    }
     public var argumentIndex: [String:[String]] {
         get {
             var allArguments = [self]
