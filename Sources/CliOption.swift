@@ -162,6 +162,10 @@ public struct CliOption : Equatable {
         if copy.values == nil, let defaultValue = copy.defaultValue {
             copy.values = [defaultValue]
         }
+        else if copy.values == nil && !copy.requiresValue {
+            //No values provided but the option doesn't require any. Add an empty set so the argument shows as valid
+            copy.values = [String]()
+        }
         //still no values, if it requires a value, throw
         if copy.values == nil && requiresValue {
             throw CliRunnableError.missingRequiredValue(keys: keys)
