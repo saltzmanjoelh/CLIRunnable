@@ -26,7 +26,7 @@ public struct CliOptionGroup {
         }
     }
 }
-public struct CliOption : Equatable {
+public struct CliOption : Equatable, CustomStringConvertible {
     public var keys: [String]
     public var description: String
     public var usage: String?
@@ -37,12 +37,14 @@ public struct CliOption : Equatable {
     public var values: [String]?
     public var action: ((CliOption) throws -> Void)?
     
-    public init(keys:[String], description:String, usage:String?, requiresValue:Bool, defaultValue:String?) {
+    public init(keys:[String], description:String, usage:String?, requiresValue:Bool, defaultValue:String?, optionalArguments: [CliOption]? = nil, requiredArguments: [CliOption]? = nil) {
         self.keys = keys
         self.description = description
         self.requiresValue = requiresValue
         self.defaultValue = defaultValue
         self.usage = usage
+        self.optionalArguments = optionalArguments
+        self.requiredArguments = requiredArguments
     }
     
     
