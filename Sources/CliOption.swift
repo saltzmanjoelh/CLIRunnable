@@ -161,7 +161,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
             copy.values = envValues
         }
         //no values yet, use the defaults if we have them
-        if copy.values == nil, let defaultValue = copy.defaultValue {
+        if copy.values == nil || copy.values!.count == 0, let defaultValue = copy.defaultValue {
             copy.values = [defaultValue]
         }
         else if copy.values == nil && !copy.requiresValue {
