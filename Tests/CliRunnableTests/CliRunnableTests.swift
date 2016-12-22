@@ -307,5 +307,28 @@ class CliRunnableTests: XCTestCase {
             //throw an error when a required arg is not provided
         }
     }
-    
+    /*
+    func testParseMultipleSingleCharOptions(){
+        do {
+            var app = App()
+            var command1 = CliOption(keys:["command1"], description:"Test a custom command", usage: "app test-command [OPTIONS]", requiresValue:false, defaultValue:nil)
+            let optionA = CliOption(keys:["-a"], description:"", usage: nil, requiresValue:false, defaultValue: nil)
+            let optionB = CliOption(keys:["-b"], description:"", usage: nil, requiresValue:false, defaultValue: nil)
+            command1.optionalArguments = [optionA, optionB]
+            var command2 = CliOption(keys:["command2"], description:"Test a custom command", usage: "app test-command [OPTIONS]", requiresValue:false, defaultValue:nil)
+            let optionC = CliOption(keys:["-c"], description:"", usage: nil, requiresValue:false, defaultValue: nil)
+            let optionD = CliOption(keys:["-d"], description:"", usage: nil, requiresValue:false, defaultValue: nil)
+            command2.optionalArguments = [optionC, optionD]
+            
+            app.group.options = [command1, command2]
+            app.cliOptionGroups = [app.group]
+            let arguments = ["/path/to/app", "command1", "-ab"]
+            
+            try app.run(arguments: arguments, environment: [:])
+            
+            
+        } catch _ {
+            //throw an error when a required arg is not provided
+        }
+    }*/
 }

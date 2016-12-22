@@ -6,6 +6,9 @@
 //
 //
 
+//TODO: update parsing to look at single - args and process all chars after as if they had - in front
+//maybe at "validatedArgs.count != optionalArgs.count"
+
 import Foundation
 
 public enum CliRunnableError: Error, CustomStringConvertible {

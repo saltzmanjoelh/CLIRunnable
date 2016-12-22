@@ -110,12 +110,11 @@ public struct CliOption : Equatable, CustomStringConvertible {
     }
     public func validateKeys(arguments:[String], environment:[String:String]) throws -> CliOption? {
         //check if the keys have been used in the arguments or environment.
-        if !keys.reduce(false, { (result, key) -> Bool in result || arguments.contains(key.lowercased()) }){
-            if !environment.keys.reduce(false, { (result, key) -> Bool in
-                return result || keys.contains(key.uppercased()) }) && defaultValue == nil {
-                return nil //this option wasn't used, remove it
+        if !keys.reduce(false) { (result, key) -> Bool in result || arguments.contains(key.lowercased()) }{
+                if !environment.keys.reduce(false, { (result, key) -> Bool in return result || keys.contains(key.uppercased()) }) && defaultValue == nil  {
+                    return nil //this option wasn't used, remove it
+                }
             }
-        }
         //this option was used, make sure it has requiredArguments fulfilled
         if let requiredArgs = requiredArguments {
             for requiredOption in requiredArgs {
