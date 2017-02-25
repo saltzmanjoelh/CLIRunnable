@@ -1,4 +1,7 @@
 # CliRunnable
+
+[![Build Status][image-1]][1] [![Swift Version][image-2]][2]
+
 Create and parse command line options for your cli application. Help documentation is auto created for you.
 
 ###CliOption
@@ -134,3 +137,9 @@ struct App : CliRunnable {
         
 }
 ```
+
+[1]:	https://travis-ci.org/saltzmanjoelh/CliRunnable
+[2]:	https://swift.org "Swift"
+
+[image-1]:	https://travis-ci.org/saltzmanjoelh/CliRunnable.svg?branch=master
+[image-2]:	https://img.shields.io/badge/swift-version%203-blue.svg
