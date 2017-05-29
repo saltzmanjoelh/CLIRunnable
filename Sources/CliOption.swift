@@ -8,24 +8,11 @@
 
 import Foundation
 
-public struct CliOptionGroup {
-    public let description: String
-    public var options = [CliOption]()
-    public func filterInvalidKeys(arguments:[String], environment:[String:String]) throws -> [CliOption] {
-        return try options.flatMap{ try $0.validateKeys(arguments: arguments, environment: environment) }
-    }
-    public init(description:String, options:[CliOption]? = nil){
-        self.description = description
-        if let theOptions = options {
-            self.options = theOptions
-        }
-    }
-    public var help: HelpEntry {
-        get {
-            return HelpEntry(with: self)
-        }
-    }
-}
+/**
+ A CliOption can either be a command or a simple option. 
+ An example of a command would be the `install` arg in `brew install foobar --debug`. The command takes some optional args and has a required arg, the formula to install.
+ An example of an option would be the `--debug` arg in `brew install foobar --debug`. An option example would be `-a` in `ls -a`
+ */
 public struct CliOption : Equatable, CustomStringConvertible {
     public var keys: [String]
     public var description: String
@@ -75,7 +62,8 @@ public struct CliOption : Equatable, CustomStringConvertible {
             return allValues
         }
     }
-    public var argumentIndex: [String:[String]] {
+    
+    /*public var argumentIndex: [String:[String]] {
         get {
             var allArguments = [self]
             if let reqArguments = requiredArguments {
@@ -92,7 +80,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
                 return copy
             })
         }
-    }
+    }*/
     
     
     public mutating func add(argument:CliOption, required:Bool = false){
@@ -108,17 +96,24 @@ public struct CliOption : Equatable, CustomStringConvertible {
             optionalArguments?.append(argument)
         }
     }
-    public func validateKeys(arguments:[String], environment:[String:String]) throws -> CliOption? {
+    public func validateKeys(indexedArguments: [String: [String: [String]]]) throws -> CliOption? {
         //check if the keys have been used in the arguments or environment.
-        if !keys.reduce(false) { (result, key) -> Bool in result || arguments.contains(key.lowercased()) }{
-                if !environment.keys.reduce(false, { (result, key) -> Bool in return result || keys.contains(key.uppercased()) }) && defaultValue == nil  {
-                    return nil //this option wasn't used, remove it
+        let foundKeys = keys.flatMap({ (key: String) -> String? in
+            if indexedArguments[key] != nil {
+                return key
+            }
+            for (_, commandValues) in indexedArguments {
+                if commandValues.keys.contains(key) {
+                    return key
                 }
             }
+            return nil
+        })
+        guard foundKeys.count > 0 else { return nil }
         //this option was used, make sure it has requiredArguments fulfilled
         if let requiredArgs = requiredArguments {
             for requiredOption in requiredArgs {
-                if try requiredOption.validateKeys(arguments: arguments, environment: environment) == nil {
+                if try requiredOption.validateKeys(indexedArguments: indexedArguments) == nil {
                     //TODO: have better error messages than "You didn't provide: ["-v", "--version", "GIT_TAG_VERSION"]", we need to know if it's a command or option
                     throw CliRunnableError.missingRequiredArgument(keys: requiredOption.keys)
                 }
@@ -126,7 +121,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
         }
         //if it had any optional arguments, get them
         if let optionalArgs = optionalArguments {
-            let validatedArgs = try optionalArgs.flatMap{ try $0.validateKeys(arguments: arguments, environment: environment) }
+            let validatedArgs = try optionalArgs.flatMap{ try $0.validateKeys(indexedArguments: indexedArguments) }
             if validatedArgs.count != optionalArgs.count {
                 //not all optional args were used, return updated version without those args
                 var copy = self
@@ -136,50 +131,32 @@ public struct CliOption : Equatable, CustomStringConvertible {
         }
         return self
     }
-    
-    public func parseValues(using delimiters:[String], arguments:[String], environment:[String:String]) throws -> CliOption {
+     
+    public func parseValues(using delimiters:[String], indexedArguments: [String: [String: [String]]]) throws -> CliOption {
         var copy = self
-        //find the first argument that matches one of this option's keys
-        if let start = arguments.index(where:{ $0.lowercased() == $0 && keys.contains($0) }) { //found one
-            let section = arguments[start..<arguments.count] //split the args from the found delimiter to the end of the args
-            //get all args from the start through until we find any other delimiter
-            if let end = section.index(where:{ $0 != section.first && $0.lowercased() == $0 && delimiters.contains($0) }) {
-                //found another delimiter (startDelimiter, value, value, anotherDelimiter)
-                copy.values = Array(section[start+1..<end])
-            }else{
-                //didn't find a key scanning to the end, use all the rest (startDelimiter, value, value)
-                let endValues = Array(section[start+1..<section.endIndex])
-                if endValues.count > 0 {
-                    copy.values = endValues
+        
+        for (commandKey, args) in indexedArguments {
+            for (key, values) in args {
+                if (key == CommandArgsKey && self.keys.contains(commandKey)) ||
+                    self.keys.contains(key){
+                    copy.values = values
+                    break
                 }
             }
         }
-        //check environment for UPPERCASED keys only
-        let envValues = keys.flatMap{ $0.uppercased() == $0 ? environment[$0] : nil }
-        if envValues.count > 0 {
-            copy.values = envValues
-        }
-        //no values yet, use the defaults if we have them
-        if copy.values == nil || copy.values!.count == 0, let defaultValue = copy.defaultValue {
-            copy.values = [defaultValue]
-        }
-        else if copy.values == nil && !copy.requiresValue {
-            //No values provided but the option doesn't require any. Add an empty set so the argument shows as valid
-            copy.values = [String]()
-        }
-        //still no values, if it requires a value, throw
+        
         if copy.values == nil && requiresValue {
             throw CliRunnableError.missingRequiredValue(keys: keys)
         }//else it might be an option like ps `-a` that doesn't require anything after it
         
         //check requiredArguments
         if let reqArguments = requiredArguments {
-            copy.requiredArguments = try reqArguments.map{ try $0.parseValues(using:delimiters, arguments:arguments, environment:environment)}
+            copy.requiredArguments = try reqArguments.map{ try $0.parseValues(using: delimiters, indexedArguments: indexedArguments)}
         }
         
         //check optionalArguments
         if let optArguments = optionalArguments {
-            copy.optionalArguments = try optArguments.map{ try $0.parseValues(using:delimiters, arguments:arguments, environment:environment)}
+            copy.optionalArguments = try optArguments.map{ try $0.parseValues(using:delimiters, indexedArguments: indexedArguments)}
         }
         
         return copy

@@ -1,12 +1,20 @@
 import XCTest
+import Yaml
 @testable import CliRunnable
 
 class CliRunnableTests: XCTestCase {
     
-    static var allTests : [(String, (CliRunnableTests) -> () throws -> Void)] {
-        return [
-            ("testValidateArgumentKeys", testValidateArgumentKeys),
-        ]
+    let app = App()
+    var commandKey = ""
+    let commandValue =  UUID().uuidString
+    var optionalName = ""
+    var optionalValue =  UUID().uuidString
+    
+    override func setUp() {
+        super.setUp()
+        self.continueAfterFailure = false
+        commandKey = app.command.keys.first!
+        optionalName = app.command.optionalArguments!.first!.keys.first!
     }
     
     struct App : CliRunnable {
@@ -22,25 +30,240 @@ class CliRunnableTests: XCTestCase {
         var group = CliOptionGroup(description:"Commands Group:")
         public init(){
             command.add(argument: option)
-            command.add(argument: secondaryOption)
+            command.add(argument: secondaryOption, required: true)
             group.options.append(command)
             cliOptionGroups = [group]
         }
         
     }
+    func createYamlConfig() -> String {
+        let configPath = "/tmp/.config_test"
+        //create the yaml file
+        let yamlContents = "\(commandKey):\n  \(CommandArgsKey):\n    - \(commandValue)-yaml\n  \(optionalName): \(optionalValue)-yaml"
+        try! yamlContents.write(toFile: configPath, atomically: false, encoding: .utf8)
+        return configPath
+    }
+    func cliArgs() -> [String] {
+        return [commandKey, commandValue+"-cli", optionalName, optionalValue+"-cli"]
+    }
+    func environmentArgs() -> [String: String] {
+        return [commandKey: "\(commandValue)-env", optionalName: "\(optionalValue)-env"]
+    }
+    func testRangeOfValue() {
+        let keys = ["one", "two", "three"]
+        let arguments = ["/binary/path"] + keys
+        
+        let result = app.range(ofKey: "two", inArguments: arguments, withKeys: keys)
+        
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result!.lowerBound, 2)
+        XCTAssertEqual(result!.upperBound, 3)
+    }
+    func testRangeOfValue_multiples() {
+        let keys = ["one", "two", "three"]
+        let arguments = ["/binary/path", "one", "two", "a", "b", "three"]
+        
+        let result = app.range(ofKey: "two", inArguments: arguments, withKeys: keys)
+        
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result!.lowerBound, 2)
+        XCTAssertEqual(result!.upperBound, 5)
+    }
+    func testRangeOfValue_endValue() {
+        let keys = ["one", "two", "three"]
+        let arguments = ["/binary/path", "one", "two", "a", "b"]
+        
+        let result = app.range(ofKey: "two", inArguments: arguments, withKeys: keys)
+        
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result!.lowerBound, 2)
+        XCTAssertEqual(result!.upperBound, 5)
+    }
+    func testIndexArguments() {
+        let arguments = cliArgs()
+        let commandKey = arguments[0]
+        let commandArg = arguments[1]
+        let optionalArgKey = arguments[2]
+        let optionalArgValue = arguments[3]
+        
+        let result = app.index(arguments: arguments, using: app.cliOptionGroups)
+        
+        XCTAssertNotNil(result[commandKey])
+        XCTAssertNotNil(result[commandKey]?[CommandArgsKey])
+        XCTAssertEqual(result[commandKey]![CommandArgsKey]!, [commandArg])
+        XCTAssertNotNil(result[commandKey]?[optionalArgKey], "\(commandKey) \(optionalArgKey) was missing")
+        XCTAssertEqual(result[commandKey]![optionalArgKey]!, [optionalArgValue])
+    }
+    func testParseYaml() throws {
+        let cli = cliArgs()
+        let configPath = createYamlConfig()
+        let commandKey = cli[0]
+        let commandValue =  cli[1].replacingOccurrences(of: "cli", with: "yaml")
+        let optionalName = cli[2]
+        let optionalValue = cli[3].replacingOccurrences(of: "cli", with: "yaml")
+        
+        let result = try app.parse(yamlConfigurationPath: configPath)
+        
+        XCTAssertNotNil(result)
+        XCTAssertNotNil(result![commandKey])
+        XCTAssertNotNil(result![commandKey]![CommandArgsKey])
+        guard let commandArgs = result![commandKey]![CommandArgsKey] else {
+            XCTFail("Yaml index didn't contain \"\(CommandArgsKey)\" key. \(result!)")
+            return
+        }
+        XCTAssertEqual(commandArgs, [commandValue])
+        XCTAssertNotNil(result![commandKey]![optionalName])
+        //make sure that single arg values convert to an array of values to match the cli parsing
+        guard let optionalArgs = result![commandKey]![optionalName] else {
+            XCTFail("Yaml index should have contained \(optionalName) argument.")
+            return
+        }
+        XCTAssertEqual(optionalArgs, [optionalValue])
+    }
+    func testParseYaml_emptyFile() throws {
+        let configPath = "/tmp/.config_test"
+        try? "".write(toFile: configPath, atomically: false, encoding: .utf8)
+        
+        let result = try app.parse(yamlConfigurationPath: configPath)
+        
+        XCTAssertNil(result)
+    }
+    func testParseYaml_nonexistingFile() throws {
+        let configPath = ""
+        try? "".write(toFile: configPath, atomically: false, encoding: .utf8)
+        
+        let result = try app.parse(yamlConfigurationPath: configPath)
+        
+        XCTAssertNil(result)
+    }
+    func testDecodeEmptyYaml() {
+        let yaml = try! [Yaml.load(""): Yaml.load("")]
+        
+        let result = app.decode(yamlDictionary: yaml)
+        
+        XCTAssertNil(result)
+    }
     
+    func testConsolidateArgs_yaml() {
+        do {
+            let args = [String]()
+            let env = [String:String]()
+            let configPath = createYamlConfig()
+            
+            let result = try app.consolidateArgs(arguments: args, environment: env, yamlConfigurationPath: configPath, optionGroups: app.cliOptionGroups)
+            
+            XCTAssertNotNil(result[commandKey])
+            XCTAssertNotNil(result[commandKey]![CommandArgsKey])
+            XCTAssertEqual(result[commandKey]![CommandArgsKey]!, [commandValue+"-yaml"])
+        }catch let e{
+            XCTFail(String(describing: e))
+        }
+    }
+    func testConsolidateArgs_env() {
+        do {
+            let args = [String]()
+            let env = environmentArgs()
+            let configPath = createYamlConfig()
+            
+            let result = try app.consolidateArgs(arguments: args, environment: env, yamlConfigurationPath: configPath, optionGroups: app.cliOptionGroups)
+            
+            XCTAssertNotNil(result[commandKey])
+            XCTAssertNotNil(result[commandKey]![CommandArgsKey])
+            XCTAssertEqual(result[commandKey]![CommandArgsKey]!, [commandValue+"-env"])
+        }catch let e{
+            XCTFail(String(describing: e))
+        }
+    }
+    func testConsolidateArgs_cli() {
+        do {
+            let args = cliArgs()
+            let env = environmentArgs()
+            let configPath = createYamlConfig()
+            
+            let result = try app.consolidateArgs(arguments: args, environment: env, yamlConfigurationPath: configPath, optionGroups: app.cliOptionGroups)
+            
+            XCTAssertNotNil(result[commandKey])
+            XCTAssertNotNil(result[commandKey]![CommandArgsKey])
+            XCTAssertEqual(result[commandKey]![CommandArgsKey]!, [commandValue+"-cli"])
+        }catch let e{
+            XCTFail(String(describing: e))
+        }
+    }
+    func testConsolidateArgs_overEmptyIndexes() {
+        do {
+            let args = cliArgs()
+            
+            let result = try app.consolidateArgs(arguments: args, environment: [:], yamlConfigurationPath: "", optionGroups: app.cliOptionGroups)
+            
+            XCTAssertNotNil(result[commandKey])
+            XCTAssertNotNil(result[commandKey]![CommandArgsKey])
+            XCTAssertEqual(result[commandKey]![CommandArgsKey]!, [commandValue+"-cli"])
+        }catch let e{
+            XCTFail(String(describing: e))
+        }
+    }
+    
+    func testIndex_missingKeys() {
+        let option = CliOption(keys:[], description:"", usage: nil, requiresValue: false, defaultValue: nil)
+        
+        let result = app.index(option: option, fromArguments: [], withKeys: [])
+        
+        XCTAssertEqual(result.count, 0)
+    }
+    func testIndex_command() {
+        let app = App()
+        let command = app.command
+        let allKeys = app.cliOptionGroups.flatMap({ $0.options.flatMap({ $0.allKeys }) })
+        let commandValue = "command value"
+        let optionValue = UUID().uuidString
+        let arguments = ["test-command", commandValue, app.option.keys[0], optionValue]
+        
+        let result = app.index(option: command,
+                               fromArguments: arguments.flatMap({$0.strippingDashPrefix}),
+                               withKeys: allKeys.flatMap({$0.strippingDashPrefix}))
+        
+        XCTAssertEqual(result.count, 1)
+        XCTAssertNotNil(result[app.command.keys[0]])
+        XCTAssertNotNil(result[app.command.keys[0]]?[CommandArgsKey])
+        XCTAssertEqual(result[app.command.keys[0]]![CommandArgsKey]?[0], commandValue)
+        XCTAssertNotNil(result[app.command.keys[0]]![app.option.keys[0]])
+        XCTAssertEqual(result[app.command.keys[0]]![app.option.keys[0]]!, [optionValue])
+    }
+    func testIndex_commandWithoutOptions() {
+        var appWithoutOptions = App()
+        var option = app.command
+        option.requiredArguments = nil
+        option.optionalArguments = nil
+        appWithoutOptions.cliOptionGroups = [CliOptionGroup.init(description: "command", options: [option])]
+        let allKeys = app.cliOptionGroups.flatMap({ $0.options.flatMap({ $0.allKeys }) })
+        let commandValue = "command value"
+        let optionValue = UUID().uuidString
+        let arguments = ["test-command", commandValue, app.option.keys[0], optionValue]
+        
+        let result = appWithoutOptions.index(option: app.command, fromArguments: arguments, withKeys: allKeys)
+        
+        XCTAssertEqual(result.count, 1)
+        XCTAssertNotNil(result[app.command.keys[0]])
+        XCTAssertNotNil(result[app.command.keys[0]]?[CommandArgsKey])
+        XCTAssertEqual(result[app.command.keys[0]]![CommandArgsKey]?[0], commandValue)
+
+    }
+    
+    
+    /*
     func testValidateArgumentKeys() {
         do{
             let option = CliOption(keys:[UUID().uuidString.lowercased()], description:"", usage: nil, requiresValue: false, defaultValue: nil)
             
-            let result = try option.validateKeys(arguments: option.keys, environment: ["":""])
+            let result = try option.validateKeys(indexedArguments: [option.keys.first!: [""]])
             
             XCTAssertEqual(result, option)
             
         } catch let e {
             XCTFail("\(e)")
         }
-    }
+    }*/
+    /*
     func testValidateArgumentKeys_failure() {
         do{
             let option = CliOption(keys:[UUID().uuidString], description:"", usage: nil, requiresValue: false, defaultValue: nil)
@@ -201,9 +424,24 @@ class CliRunnableTests: XCTestCase {
             XCTFail("\(e)")
         }
     }
+    */
+    
+    //TODO: test if we add the full help feature, otherwise sub options aren't used
+/*    func testColumnLength() {
+        let helpEntries = app.detailedHelpEntries(option: app.command)
+        
+        let length = helpEntries.last?.columnLength()
+        
+        XCTAssertEqual(length, helpEntries.last.)
+    }
+    func testStringValue() {
+        
+    }
+ */
+    
+    
     
     func testHelpString(){
-        let app = App()
         
         let help = app.helpString(with: app.helpEntries())
         print(help)
@@ -213,8 +451,8 @@ class CliRunnableTests: XCTestCase {
         XCTAssertTrue(help.contains(app.command.keys.first!))
         XCTAssertTrue(help.contains(app.appUsage!))
     }
+    
     func testDetailedHelpString() {
-        let app = App()
         
         let help = app.helpString(with: app.detailedHelpEntries(option: app.command))
         print(help)
@@ -226,21 +464,7 @@ class CliRunnableTests: XCTestCase {
         XCTAssertTrue(help.contains(app.secondaryOption.keys.first!))
     }
 
-    //TODO: test if we add the full help feature, otherwise sub options aren't used
-/*    func testColumnLength() {
-        let app = App()
-        let helpEntries = app.detailedHelpEntries(option: app.command)
-        
-        let length = helpEntries.last?.columnLength()
-        
-        XCTAssertEqual(length, helpEntries.last.)
-    }
-    func testStringValue() {
-        
-    }
- */
     func testParseHelpOption_nil() {
-        let app = App()
         let arguments = ["/path/to/app", "command"]
         
         let option = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
@@ -248,15 +472,23 @@ class CliRunnableTests: XCTestCase {
         XCTAssertNil(option)
     }
     func testParseHelpOption() {
-        let app = App()
         let arguments = ["/path/to/app", app.command.keys.last!, "help"]
         
         let option = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
         
         XCTAssertEqual(option, app.command)
     }
+    func testParseHelpOption_invalidOption() {
+        let arguments = ["/path/to/app", "invalid", "help"]
+        
+        let result = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
+        
+        XCTAssertNil(result)
+    }
+    
+    
+    
     func testUnknownKey() {
-        let app = App()
         let unknownKey = "--foo-bar"
         let arguments = ["/path/to/app", app.command.keys.last!, "value", unknownKey]
         
@@ -266,38 +498,35 @@ class CliRunnableTests: XCTestCase {
     }
     func testHandleUnknownKeys() {
         do {
-            let app = App()
             let unknownKey = "--foo-bar"
             let arguments = ["/path/to/app", app.command.keys.last!, unknownKey]
             
             try app.handleUnknownKeys(arguments: arguments, options: [app.command])
+            
             XCTFail("Error should have been thrown.")
         } catch _ {
             
         }
     }
-    func testAppRun() {
+    func testHandleUnknownKeys_validKey() {
         do {
-            let app = App()
-            let unknownKey = "--foo-bar"
-            let arguments = ["/path/to/app", app.command.keys.last!, "value", unknownKey]
+            let arguments = ["/path/to/app", app.command.keys.last!, app.command.optionalArguments![0].keys[0]]
             
-            try app.run(arguments: arguments, environment: [:])
+            try app.handleUnknownKeys(arguments: arguments, options: [app.command])
             
         } catch let e {
-            XCTFail("Error: \(e)")
+            XCTFail(String(describing: e))
         }
     }
-    
     func testMissingRequireArguments(){
         do {
             var app = App()
             var cmd = app.command
-            let option = CliOption(keys:["-o", "--option"], description:"Some Option", usage: nil, requiresValue:false, defaultValue: nil)
+            let option = CliOption(keys:["-o", "--option"], description:"Some Option", usage: nil, requiresValue:true, defaultValue: nil)
             cmd.requiredArguments = [option]
             app.group.options = [cmd]
             app.cliOptionGroups = [app.group]
-            let arguments = ["/path/to/app", "test-command", "command-value"]
+            let arguments = ["/path/to/app", "test-command"]
             
             try app.run(arguments: arguments, environment: [:])
             
@@ -307,28 +536,57 @@ class CliRunnableTests: XCTestCase {
             //throw an error when a required arg is not provided
         }
     }
-    /*
-    func testParseMultipleSingleCharOptions(){
+    
+    
+    func testAppRun_unknownKey() {
         do {
-            var app = App()
-            var command1 = CliOption(keys:["command1"], description:"Test a custom command", usage: "app test-command [OPTIONS]", requiresValue:false, defaultValue:nil)
-            let optionA = CliOption(keys:["-a"], description:"", usage: nil, requiresValue:false, defaultValue: nil)
-            let optionB = CliOption(keys:["-b"], description:"", usage: nil, requiresValue:false, defaultValue: nil)
-            command1.optionalArguments = [optionA, optionB]
-            var command2 = CliOption(keys:["command2"], description:"Test a custom command", usage: "app test-command [OPTIONS]", requiresValue:false, defaultValue:nil)
-            let optionC = CliOption(keys:["-c"], description:"", usage: nil, requiresValue:false, defaultValue: nil)
-            let optionD = CliOption(keys:["-d"], description:"", usage: nil, requiresValue:false, defaultValue: nil)
-            command2.optionalArguments = [optionC, optionD]
-            
-            app.group.options = [command1, command2]
-            app.cliOptionGroups = [app.group]
-            let arguments = ["/path/to/app", "command1", "-ab"]
+            let app = App()
+            let unknownKey = "--foo-bar"
+            let arguments = ["/path/to/app", unknownKey]
             
             try app.run(arguments: arguments, environment: [:])
             
-            
-        } catch _ {
-            //throw an error when a required arg is not provided
+        } catch let e {
+            XCTFail("Error: \(e)")
         }
-    }*/
+    }
+    func testAppRun() {
+        do {
+            let app = App()
+            let arguments = ["/path/to/app", "test-command", "value", "-o", "-a"]
+            
+            try app.run(arguments: arguments, environment: [:])
+            
+        } catch let e {
+            XCTFail("Error: \(e)")
+        }
+    }
+    
+    func testStrippingDashPrefix_singleDash() {
+        let option = "-option-name"
+        
+        let result = option.strippingDashPrefix
+        
+        XCTAssertEqual(result, "option-name")
+    }
+    func testStrippingDashPrefix_doubleDash() {
+        let option = "--option-name"
+        
+        let result = option.strippingDashPrefix
+        
+        XCTAssertEqual(result, "option-name")
+    }
+    func testStrippingDashPrefix_zeroDashes() {
+        let option = "option-name"
+        
+        let result = option.strippingDashPrefix
+        
+        XCTAssertEqual(result, "option-name")
+    }
+    
+    static var allTests : [(String, (CliRunnableTests) -> () throws -> Void)] {
+        return [
+            //("testValidateArgumentKeys", testValidateArgumentKeys),
+        ]
+    }
 }
