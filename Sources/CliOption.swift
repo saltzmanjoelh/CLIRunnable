@@ -63,7 +63,8 @@ public struct CliOption : Equatable, CustomStringConvertible {
         }
     }
     
-    /*public var argumentIndex: [String:[String]] {
+    //Used with parsing to help check if an optional arguent or required argument was used
+    public var argumentIndex: [String:[String]] {
         get {
             var allArguments = [self]
             if let reqArguments = requiredArguments {
@@ -80,7 +81,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
                 return copy
             })
         }
-    }*/
+    }
     
     
     public mutating func add(argument:CliOption, required:Bool = false){
