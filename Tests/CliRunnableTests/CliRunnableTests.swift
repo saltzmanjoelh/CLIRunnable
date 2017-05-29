@@ -49,6 +49,7 @@ class CliRunnableTests: XCTestCase {
     func environmentArgs() -> [String: String] {
         return [commandKey: "\(commandValue)-env", optionalName: "\(optionalValue)-env"]
     }
+    
     func testRangeOfValue() {
         let keys = ["one", "two", "three"]
         let arguments = ["/binary/path"] + keys
@@ -249,6 +250,144 @@ class CliRunnableTests: XCTestCase {
 
     }
     
+    func testHelpString(){
+        
+        let help = app.helpString(with: app.helpEntries())
+        print(help)
+        
+        XCTAssertTrue(help.contains(app.description!))
+        XCTAssertTrue(help.contains(app.group.description))
+        XCTAssertTrue(help.contains(app.command.keys.first!))
+        XCTAssertTrue(help.contains(app.appUsage!))
+    }
+    func testDetailedHelpString() {
+        
+        let help = app.helpString(with: app.detailedHelpEntries(option: app.command))
+        print(help)
+        
+        XCTAssertTrue(help.contains(app.command.usage!))
+        XCTAssertTrue(help.contains(app.command.description))
+        XCTAssertTrue(help.contains(app.option.keys.first!))
+        XCTAssertTrue(help.contains(app.option.defaultValue!))
+        XCTAssertTrue(help.contains(app.secondaryOption.keys.first!))
+    }
+    
+    func testParseHelpOption_nil() {
+        let arguments = ["/path/to/app", "command"]
+        
+        let option = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
+        
+        XCTAssertNil(option)
+    }
+    func testParseHelpOption() {
+        let arguments = ["/path/to/app", app.command.keys.last!, "help"]
+        
+        let option = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
+        
+        XCTAssertEqual(option, app.command)
+    }
+    func testParseHelpOption_invalidOption() {
+        let arguments = ["/path/to/app", "invalid", "help"]
+        
+        let result = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
+        
+        XCTAssertNil(result)
+    }
+    
+    func testUnknownKey() {
+        let unknownKey = "--foo-bar"
+        let arguments = ["/path/to/app", app.command.keys.last!, "value", unknownKey]
+        
+        let unknownKeys = app.parseUnknownKeys(arguments: arguments, validKeys: [app.command.keys.last!], values: ["value"])
+        
+        XCTAssertEqual(unknownKeys, [unknownKey])
+    }
+    func testHandleUnknownKeys() {
+        do {
+            let unknownKey = "--foo-bar"
+            let arguments = ["/path/to/app", app.command.keys.last!, unknownKey]
+            
+            try app.handleUnknownKeys(arguments: arguments, options: [app.command])
+            
+            XCTFail("Error should have been thrown.")
+        } catch _ {
+            
+        }
+    }
+    func testHandleUnknownKeys_validKey() {
+        do {
+            let arguments = ["/path/to/app", app.command.keys.last!, app.command.optionalArguments![0].keys[0]]
+            
+            try app.handleUnknownKeys(arguments: arguments, options: [app.command])
+            
+        } catch let e {
+            XCTFail(String(describing: e))
+        }
+    }
+    func testMissingRequireArguments(){
+        do {
+            var app = App()
+            var cmd = app.command
+            let option = CliOption(keys:["-o", "--option"], description:"Some Option", usage: nil, requiresValue:true, defaultValue: nil)
+            cmd.requiredArguments = [option]
+            app.group.options = [cmd]
+            app.cliOptionGroups = [app.group]
+            let arguments = ["/path/to/app", "test-command"]
+            
+            try app.run(arguments: arguments, environment: [:])
+            
+            XCTFail("Required argument was missing and an error should have been thrown.")
+            
+        } catch _ {
+            //throw an error when a required arg is not provided
+        }
+    }
+    
+    func testAppRun_unknownKey() {
+        do {
+            let app = App()
+            let unknownKey = "--foo-bar"
+            let arguments = ["/path/to/app", unknownKey]
+            
+            try app.run(arguments: arguments, environment: [:])
+            
+        } catch let e {
+            XCTFail("Error: \(e)")
+        }
+    }
+    func testAppRun() {
+        do {
+            let app = App()
+            let arguments = ["/path/to/app", "test-command", "value", "-o", "-a"]
+            
+            try app.run(arguments: arguments, environment: [:])
+            
+        } catch let e {
+            XCTFail("Error: \(e)")
+        }
+    }
+    
+    func testStrippingDashPrefix_singleDash() {
+        let option = "-option-name"
+        
+        let result = option.strippingDashPrefix
+        
+        XCTAssertEqual(result, "option-name")
+    }
+    func testStrippingDashPrefix_doubleDash() {
+        let option = "--option-name"
+        
+        let result = option.strippingDashPrefix
+        
+        XCTAssertEqual(result, "option-name")
+    }
+    func testStrippingDashPrefix_zeroDashes() {
+        let option = "option-name"
+        
+        let result = option.strippingDashPrefix
+        
+        XCTAssertEqual(result, "option-name")
+    }
     
     /*
     func testValidateArgumentKeys() {
@@ -441,152 +580,47 @@ class CliRunnableTests: XCTestCase {
     
     
     
-    func testHelpString(){
-        
-        let help = app.helpString(with: app.helpEntries())
-        print(help)
-        
-        XCTAssertTrue(help.contains(app.description!))
-        XCTAssertTrue(help.contains(app.group.description))
-        XCTAssertTrue(help.contains(app.command.keys.first!))
-        XCTAssertTrue(help.contains(app.appUsage!))
-    }
     
-    func testDetailedHelpString() {
-        
-        let help = app.helpString(with: app.detailedHelpEntries(option: app.command))
-        print(help)
-        
-        XCTAssertTrue(help.contains(app.command.usage!))
-        XCTAssertTrue(help.contains(app.command.description))
-        XCTAssertTrue(help.contains(app.option.keys.first!))
-        XCTAssertTrue(help.contains(app.option.defaultValue!))
-        XCTAssertTrue(help.contains(app.secondaryOption.keys.first!))
-    }
-
-    func testParseHelpOption_nil() {
-        let arguments = ["/path/to/app", "command"]
-        
-        let option = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
-        
-        XCTAssertNil(option)
-    }
-    func testParseHelpOption() {
-        let arguments = ["/path/to/app", app.command.keys.last!, "help"]
-        
-        let option = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
-        
-        XCTAssertEqual(option, app.command)
-    }
-    func testParseHelpOption_invalidOption() {
-        let arguments = ["/path/to/app", "invalid", "help"]
-        
-        let result = app.parseHelpOption(cliOptionGroups: app.cliOptionGroups, arguments: arguments)
-        
-        XCTAssertNil(result)
-    }
-    
-    
-    
-    func testUnknownKey() {
-        let unknownKey = "--foo-bar"
-        let arguments = ["/path/to/app", app.command.keys.last!, "value", unknownKey]
-        
-        let unknownKeys = app.parseUnknownKeys(arguments: arguments, validKeys: [app.command.keys.last!], values: ["value"])
-        
-        XCTAssertEqual(unknownKeys, [unknownKey])
-    }
-    func testHandleUnknownKeys() {
-        do {
-            let unknownKey = "--foo-bar"
-            let arguments = ["/path/to/app", app.command.keys.last!, unknownKey]
-            
-            try app.handleUnknownKeys(arguments: arguments, options: [app.command])
-            
-            XCTFail("Error should have been thrown.")
-        } catch _ {
-            
-        }
-    }
-    func testHandleUnknownKeys_validKey() {
-        do {
-            let arguments = ["/path/to/app", app.command.keys.last!, app.command.optionalArguments![0].keys[0]]
-            
-            try app.handleUnknownKeys(arguments: arguments, options: [app.command])
-            
-        } catch let e {
-            XCTFail(String(describing: e))
-        }
-    }
-    func testMissingRequireArguments(){
-        do {
-            var app = App()
-            var cmd = app.command
-            let option = CliOption(keys:["-o", "--option"], description:"Some Option", usage: nil, requiresValue:true, defaultValue: nil)
-            cmd.requiredArguments = [option]
-            app.group.options = [cmd]
-            app.cliOptionGroups = [app.group]
-            let arguments = ["/path/to/app", "test-command"]
-            
-            try app.run(arguments: arguments, environment: [:])
-            
-            XCTFail("Required argument was missing and an error should have been thrown.")
-            
-        } catch _ {
-            //throw an error when a required arg is not provided
-        }
-    }
-    
-    
-    func testAppRun_unknownKey() {
-        do {
-            let app = App()
-            let unknownKey = "--foo-bar"
-            let arguments = ["/path/to/app", unknownKey]
-            
-            try app.run(arguments: arguments, environment: [:])
-            
-        } catch let e {
-            XCTFail("Error: \(e)")
-        }
-    }
-    func testAppRun() {
-        do {
-            let app = App()
-            let arguments = ["/path/to/app", "test-command", "value", "-o", "-a"]
-            
-            try app.run(arguments: arguments, environment: [:])
-            
-        } catch let e {
-            XCTFail("Error: \(e)")
-        }
-    }
-    
-    func testStrippingDashPrefix_singleDash() {
-        let option = "-option-name"
-        
-        let result = option.strippingDashPrefix
-        
-        XCTAssertEqual(result, "option-name")
-    }
-    func testStrippingDashPrefix_doubleDash() {
-        let option = "--option-name"
-        
-        let result = option.strippingDashPrefix
-        
-        XCTAssertEqual(result, "option-name")
-    }
-    func testStrippingDashPrefix_zeroDashes() {
-        let option = "option-name"
-        
-        let result = option.strippingDashPrefix
-        
-        XCTAssertEqual(result, "option-name")
-    }
     
     static var allTests : [(String, (CliRunnableTests) -> () throws -> Void)] {
         return [
-            //("testValidateArgumentKeys", testValidateArgumentKeys),
+            ("testRangeOfValue", testRangeOfValue),
+            ("testRangeOfValue_multiples", testRangeOfValue_multiples),
+            ("testRangeOfValue_endValue", testRangeOfValue_endValue),
+            ("testIndexArguments", testIndexArguments),
+            ("testParseYaml", testParseYaml),
+            ("testParseYaml_emptyFile", testParseYaml_emptyFile),
+            ("testParseYaml_nonexistingFile", testParseYaml_nonexistingFile),
+            ("testDecodeEmptyYaml", testDecodeEmptyYaml),
+            
+            ("testConsolidateArgs_yaml", testConsolidateArgs_yaml),
+            ("testConsolidateArgs_env", testConsolidateArgs_env),
+            ("testConsolidateArgs_cli", testConsolidateArgs_cli),
+            ("testConsolidateArgs_overEmptyIndexes", testConsolidateArgs_overEmptyIndexes),
+            
+            ("testIndex_missingKeys", testIndex_missingKeys),
+            ("testIndex_command", testIndex_command),
+            ("testIndex_commandWithoutOptions", testIndex_commandWithoutOptions),
+            
+            ("testHelpString", testHelpString),
+            ("testDetailedHelpString", testDetailedHelpString),
+            
+            ("testParseHelpOption_nil", testParseHelpOption_nil),
+            ("testParseHelpOption", testParseHelpOption),
+            ("testParseHelpOption_invalidOption", testParseHelpOption_invalidOption),
+            
+            ("testUnknownKey", testUnknownKey),
+            ("testHandleUnknownKeys", testHandleUnknownKeys),
+            ("testHandleUnknownKeys_validKey", testHandleUnknownKeys_validKey),
+            ("testMissingRequireArguments", testMissingRequireArguments),
+            
+            ("testAppRun_unknownKey", testAppRun_unknownKey),
+            ("testAppRun", testAppRun),
+            
+            ("testStrippingDashPrefix_singleDash", testStrippingDashPrefix_singleDash),
+            ("testStrippingDashPrefix_doubleDash", testStrippingDashPrefix_doubleDash),
+            ("testStrippingDashPrefix_zeroDashes", testStrippingDashPrefix_zeroDashes)
+            
         ]
     }
 }
