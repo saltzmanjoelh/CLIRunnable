@@ -150,7 +150,7 @@ extension CliRunnable {
         //we move the found option to index
         var result = [String: [String: [String]] ]()
         //get a list of all possible keys, removing the - or -- from the prefix
-        let allKeys = optionGroups.flatMap({ $0.options.flatMap({ $0.allKeys.flatMap({ $0.strippingDashPrefix }) }) })
+        let allKeys: [String] = optionGroups.flatMap({ $0.options.flatMap({ $0.allKeys.flatMap({ $0.strippingDashPrefix }) }) })
         optionGroups.forEach({ (optionGroup: CliOptionGroup) in
             optionGroup.options.forEach({ (option: CliOption) in
                 result.merge(dictionaries: index(option: option, fromArguments: arguments.flatMap({ $0.strippingDashPrefix }), withKeys: allKeys))
