@@ -72,7 +72,7 @@ extension CliRunnable {
     /**
      Merges all the possible inputs together. The order of precedence is yaml, environment, cli arguments.
      That means if you have an argument listed in the yaml file and differently as an evironment variable, the env var will be used.
-    */
+     */
     public func consolidateArgs(arguments:[String], environment:[String:String], yamlConfigurationPath: String? = nil, optionGroups: [CliOptionGroup]) throws -> [String: [String: [String]]] {
         //index the cli args
         let cliArguments = index(arguments: arguments, using: optionGroups)
@@ -102,7 +102,7 @@ extension CliRunnable {
         
         return result
     }
-
+    
     
     //Iterate each CliOptionGroup's options and let them parse the args. If they find invalid args they (the CliOption) will throw.
     //If they (the CliOption) are optional and aren't fulfiled, they will be filtered out
@@ -141,7 +141,7 @@ extension CliRunnable {
      /binary/path command arg1 arg2 --option optionValue
      like [String: [String: [String]]]
      ["command": ["command-args": ["arg1", "arg2"]
-                "--option": ["optionValue", "optionValue2"]]
+     "--option": ["optionValue", "optionValue2"]]
      ]
      */
     public func index(arguments: [String], using optionGroups: [CliOptionGroup]) -> [String: [String: [String]] ] {
@@ -213,21 +213,25 @@ extension CliRunnable {
         
         let yaml = try String.init(contentsOf: URL(fileURLWithPath: path))
         guard let object = try Yaml.load(yaml).dictionary,
-            var decodedYaml = decode(yamlDictionary: object)
+            let decodedYaml = decode(yamlDictionary: object)
             else { return nil }
         
         //make sure all values are arrays of values
+        var result = [String: [String: [String]]]()
         for (command, commandValue) in decodedYaml {
-            if var commandDictionary = commandValue as? [String: Any] {
+            if let commandDictionary = commandValue as? [String: Any] {
+                var resultCommandDictionary = [String: [String]]()
                 for (key, value) in commandDictionary {
-                    if !(value is Array<Any>) {
-                        commandDictionary[key] = [value]
+                    if let valueArray = value as? [String]{
+                        resultCommandDictionary[key] = valueArray
+                    }else{
+                        resultCommandDictionary[key] = ["\(value)"]
                     }
                 }
-                decodedYaml[command] = commandDictionary
+                result[command] = resultCommandDictionary
             }
         }
-        return decodedYaml as? [String: [String: [String]]]
+        return result
     }
     public func decode(yamlDictionary: [Yaml:Yaml]) -> [String:Any]? {
         var result = [String:Any]()
@@ -259,7 +263,7 @@ extension CliRunnable {
     }
 }
 
-// MARK: Help 
+// MARK: Help
 extension CliRunnable {
     public func helpEntries() -> [HelpEntry] {
         var entries = [HelpEntry]()
@@ -297,7 +301,7 @@ extension CliRunnable {
                 return option
             }
             return nil
-        }.first
+            }.first
     }
     public func printHelp(cliOptionGroups:[CliOptionGroup], arguments: [String]) {
         
@@ -316,3 +320,4 @@ extension String {
         return regex.stringByReplacingMatches(in: self, options: [], range: NSRange.init(location: 0, length: self.characters.count), withTemplate: "")
     }
 }
+
