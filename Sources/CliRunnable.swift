@@ -91,7 +91,7 @@ extension CliRunnable {
         let env = index(arguments: flattendEnv, using: optionGroups)
         
         //assuming that the first arg is the command, pull the command options from yamlIndex
-        var yamlConfig = [String: [String: [String]] ]()
+        var yamlConfig = yamlIndex ?? [String: [String: [String]] ]()
         if  arguments.count >= 1 {
             let command = arguments[1]
             if let commandConfig = yamlIndex?[command] {
