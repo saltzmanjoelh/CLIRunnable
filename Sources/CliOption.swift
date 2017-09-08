@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- A CliOption can either be a command or a simple option. 
+ A CliOption can either be a command or a simple option.
  An example of a command would be the `install` arg in `brew install foobar --debug`. The command takes some optional args and has a required arg, the formula to install.
  An example of an option would be the `--debug` arg in `brew install foobar --debug`. An option example would be `-a` in `ls -a`
  */
@@ -114,7 +114,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
         //this option was used, make sure it has requiredArguments fulfilled
         if let requiredArgs = requiredArguments {
             for requiredOption in requiredArgs {
-                if try requiredOption.validateKeys(indexedArguments: indexedArguments) == nil {
+                if try requiredOption.validateKeys(indexedArguments: indexedArguments) == nil && requiredOption.defaultValue == nil {
                     //TODO: have better error messages than "You didn't provide: ["-v", "--version", "GIT_TAG_VERSION"]", we need to know if it's a command or option
                     throw CliRunnableError.missingRequiredArgument(keys: requiredOption.keys)
                 }
@@ -132,7 +132,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
         }
         return self
     }
-     
+    
     public func parseValues(using delimiters:[String], indexedArguments: [String: [String: [String]]]) throws -> CliOption {
         var copy = self
         
@@ -147,7 +147,11 @@ public struct CliOption : Equatable, CustomStringConvertible {
         }
         
         if copy.values == nil && requiresValue {
-            throw CliRunnableError.missingRequiredValue(keys: keys)
+            if let defaultValue = self.defaultValue {
+                copy.values = [defaultValue]
+            }else{
+                throw CliRunnableError.missingRequiredValue(keys: keys)
+            }
         }//else it might be an option like ps `-a` that doesn't require anything after it
         
         //check requiredArguments
@@ -171,4 +175,5 @@ public func ==(lhs:CliOption, rhs:CliOption) -> Bool {
 public func !=(lhs: CliOption, rhs: CliOption) -> Bool {
     return lhs.keys != rhs.keys
 }
+
 

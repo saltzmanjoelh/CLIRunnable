@@ -45,16 +45,22 @@ extension CliRunnable {
     
     public func run(arguments:[String], environment:[String:String], yamlConfigurationPath: String? = nil) throws {
         let optionGroups = cliOptionGroups
-        let mergedIndex = try consolidateArgs(arguments: arguments, environment: environment, optionGroups: optionGroups)
+        let mergedIndex = try consolidateArgs(arguments: arguments,
+                                              environment: environment,
+                                              yamlConfigurationPath: yamlConfigurationPath,
+                                              optionGroups: optionGroups)
         //add a function to attach merged index values to cliOption values
         //reduce cliOptions to a list of valid options
         //?? get a list of invalid arguments "unknown keys"
         //perform each action from the reduced options
-        
         let cliOptions = try cliOptionGroups.flatMap{
             try $0.filterInvalidKeys(indexedArguments: mergedIndex)
         }
-        if cliOptions.count > 0, let lastArgument = arguments.last, !helpKeys().contains(lastArgument), lastArgument != arguments.first! {
+        
+        if cliOptions.count > 0,
+            let lastArgument = arguments.last,
+            !helpKeys().contains(lastArgument),
+            lastArgument != arguments.first! {
             
             let parsedOptions = try parse(optionGroups: optionGroups,
                                           indexedArguments: mergedIndex)
@@ -84,7 +90,16 @@ extension CliRunnable {
         })
         let env = index(arguments: flattendEnv, using: optionGroups)
         
-        let mergedIndexes = merge(env, over: yamlIndex)
+        //assuming that the first arg is the command, pull the command options from yamlIndex
+        var yamlConfig = [String: [String: [String]] ]()
+        if  arguments.count >= 1 {
+            let command = arguments[1]
+            if let commandConfig = yamlIndex?[command] {
+                yamlConfig[command] = commandConfig
+            }
+        }
+        
+        let mergedIndexes = merge(env, over: yamlConfig)
         let mergeResult = merge(cliArguments, over: mergedIndexes)
         return mergeResult
     }
@@ -93,7 +108,7 @@ extension CliRunnable {
         guard var result = index else { return indexedArguments }//didn't have yaml, just return cli
         for (command, commandValues) in indexedArguments {//iterate cli args
             //top level is command, iterate command args
-            var commandIndex = [String: [String]]()
+            var commandIndex = result[command] ?? [String: [String]]()
             for (key, value) in commandValues {
                 commandIndex[key] = value
             }
@@ -231,6 +246,7 @@ extension CliRunnable {
                 result[command] = resultCommandDictionary
             }
         }
+        
         return result
     }
     public func decode(yamlDictionary: [Yaml:Yaml]) -> [String:Any]? {
