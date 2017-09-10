@@ -142,4 +142,4 @@ struct App : CliRunnable {
 [2]:	https://swift.org "Swift"
 
 [image-1]:	https://travis-ci.org/saltzmanjoelh/CliRunnable.svg?branch=master
-[image-2]:	https://img.shields.io/badge/swift-version%203-blue.svg
+[image-2]:	https://img.shields.io/badge/swift-version%204-blue.svg
