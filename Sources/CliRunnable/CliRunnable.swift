@@ -92,7 +92,7 @@ extension CliRunnable {
         
         //assuming that the first arg is the command, pull the command options from yamlIndex
         var yamlConfig = yamlIndex ?? [String: [String: [String]] ]()
-        if  arguments.count >= 1 {
+        if arguments.count >= 2 {//1 for the path to the binary and 1 for the command
             let command = arguments[1]
             if let commandConfig = yamlIndex?[command] {
                 yamlConfig[command] = commandConfig
