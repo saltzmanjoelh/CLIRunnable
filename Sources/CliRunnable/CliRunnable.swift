@@ -49,21 +49,16 @@ extension CliRunnable {
                                               environment: environment,
                                               yamlConfigurationPath: yamlConfigurationPath,
                                               optionGroups: optionGroups)
-        //add a function to attach merged index values to cliOption values
-        //reduce cliOptions to a list of valid options
-        //?? get a list of invalid arguments "unknown keys"
-        //perform each action from the reduced options
-        let cliOptions = try cliOptionGroups.flatMap{
-            try $0.filterInvalidKeys(indexedArguments: mergedIndex)
-        }
         
-        if cliOptions.count > 0,
+        //We run through all possible options to try and find
+        //an option that has valid keys and doesn't throw an error.
+        //If a command is found but it's required options aren't, we throw an error
+        let parsedOptions = try parse(optionGroups: optionGroups, indexedArguments: mergedIndex)
+        
+        if parsedOptions.count > 0,
             let lastArgument = arguments.last,
             !helpKeys().contains(lastArgument),
             lastArgument != arguments.first! {
-            
-            let parsedOptions = try parse(optionGroups: optionGroups,
-                                          indexedArguments: mergedIndex)
             try handleUnknownKeys(arguments: arguments, options: parsedOptions)
             
             try parsedOptions.forEach{
@@ -89,7 +84,6 @@ extension CliRunnable {
             return result + [pair.key, pair.value]
         })
         let env = index(arguments: flattendEnv, using: optionGroups)
-        
         //assuming that the first arg is the command, pull the command options from yamlIndex
         var yamlConfig = yamlIndex ?? [String: [String: [String]] ]()
         if arguments.count >= 2 {//1 for the path to the binary and 1 for the command

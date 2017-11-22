@@ -324,7 +324,7 @@ class CliRunnableTests: XCTestCase {
             XCTFail(String(describing: e))
         }
     }
-    func testMissingRequireArguments(){
+    func testMissingRequiredArguments(){
         do {
             var app = App()
             var cmd = app.command
@@ -352,13 +352,24 @@ class CliRunnableTests: XCTestCase {
             try app.run(arguments: arguments, environment: [:])
             
         } catch let e {
-            XCTFail("Error: \(e)")
+            XCTAssertEqual(String(describing: e), "Unknown keys: [\"--foo-bar\"]")
         }
     }
     func testAppRun() {
         do {
             let app = App()
             let arguments = ["/path/to/app", "test-command", "value", "-o", "-a"]
+            
+            try app.run(arguments: arguments, environment: [:])
+            
+        } catch let e {
+            XCTFail("Error: \(e)")
+        }
+    }
+    func testSecondaryKey() {
+        do {
+            let app = App()
+            let arguments = ["/path/to/app", "test-command", "value", "--option", "--alternate-option"]
             
             try app.run(arguments: arguments, environment: [:])
             
@@ -612,7 +623,7 @@ class CliRunnableTests: XCTestCase {
             ("testUnknownKey", testUnknownKey),
             ("testHandleUnknownKeys", testHandleUnknownKeys),
             ("testHandleUnknownKeys_validKey", testHandleUnknownKeys_validKey),
-            ("testMissingRequireArguments", testMissingRequireArguments),
+            ("testMissingRequiredArguments", testMissingRequiredArguments),
             
             ("testAppRun_unknownKey", testAppRun_unknownKey),
             ("testAppRun", testAppRun),
