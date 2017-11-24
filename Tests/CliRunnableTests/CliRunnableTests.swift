@@ -156,9 +156,9 @@ class CliRunnableTests: XCTestCase {
             
             let result = try app.consolidateArgs(arguments: args, environment: env, yamlConfigurationPath: configPath, optionGroups: app.cliOptionGroups)
             
-            XCTAssertNotNil(result[commandKey])
-            XCTAssertNotNil(result[commandKey]![CommandArgsKey])
-            XCTAssertEqual(result[commandKey]![CommandArgsKey]!, [commandValue+"-yaml"])
+            //We load the yaml config but if we don't pass any args or env we don't process anything.
+            //Otherwise, we would be processing everything in the yaml file
+            XCTAssertNil(result[commandKey])
         }catch let e{
             XCTFail(String(describing: e))
         }
