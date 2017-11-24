@@ -27,11 +27,14 @@ class CliRunnableTests: XCTestCase {
         var command = CliOption(keys:["test-command"], description:"Test a custom command", usage: "app test-command [OPTIONS]", requiresValue:true, defaultValue:nil)
         let option = CliOption(keys:["-o", "--option"], description:"Some Option", usage: nil, requiresValue:false, defaultValue: "default_value")
         let secondaryOption = CliOption(keys:["-a", "--alternate-option"], description:"Alternate Option", usage: nil, requiresValue:false, defaultValue: nil)
+        var nextCommand = CliOption(keys:["next-command"], description:"Test a another command", usage: "app next-command [OPTIONS]", requiresValue:false, defaultValue:nil)
+        var nextRequiredOption = CliOption(keys:["-r", "--required"], description:"Required Option", usage: nil, requiresValue:true, defaultValue: nil)
         var group = CliOptionGroup(description:"Commands Group:")
         public init(){
             command.add(argument: option)
             command.add(argument: secondaryOption, required: true)
             group.options.append(command)
+            group.options.append(nextCommand)
             cliOptionGroups = [group]
         }
         
@@ -377,6 +380,21 @@ class CliRunnableTests: XCTestCase {
             XCTFail("Error: \(e)")
         }
     }
+    //If we provide a yaml config, we shouldn't use all keys from it. We should only run what was provided in cli args
+    func testParseCliArgsWithYaml() {
+        do {
+            let app = App()
+            let yml = "test-command:\n  args: [value]\n  --option: true\nnext-command:\n  --required: true"
+            let path = "/tmp/testParseCliArgsWithYaml.yml"
+            try! yml.write(to: URL(fileURLWithPath: path), atomically: false, encoding: .utf8)
+            let arguments = ["/path/to/app", "test-command", "--alternate-option"]
+            
+            try app.run(arguments: arguments, environment: [:], yamlConfigurationPath: path)
+            
+        } catch let e {
+            XCTFail("Error: \(e)")
+        }
+    }
     
     func testStrippingDashPrefix_singleDash() {
         let option = "-option-name"
@@ -627,6 +645,8 @@ class CliRunnableTests: XCTestCase {
             
             ("testAppRun_unknownKey", testAppRun_unknownKey),
             ("testAppRun", testAppRun),
+            ("testSecondaryKey", testSecondaryKey),
+            ("testParseCliArgsWithYaml", testParseCliArgsWithYaml),
             
             ("testStrippingDashPrefix_singleDash", testStrippingDashPrefix_singleDash),
             ("testStrippingDashPrefix_doubleDash", testStrippingDashPrefix_doubleDash),

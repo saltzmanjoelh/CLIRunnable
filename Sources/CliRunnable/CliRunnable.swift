@@ -50,6 +50,7 @@ extension CliRunnable {
                                               yamlConfigurationPath: yamlConfigurationPath,
                                               optionGroups: optionGroups)
         
+        
         //We run through all possible options to try and find
         //an option that has valid keys and doesn't throw an error.
         //If a command is found but it's required options aren't, we throw an error
@@ -92,9 +93,24 @@ extension CliRunnable {
                 yamlConfig[command] = commandConfig
             }
         }
+        let envMerge = merge(env, over: yamlConfig)
+        let cliMerge = merge(cliArguments, over: envMerge)
         
-        let mergedIndexes = merge(env, over: yamlConfig)
-        let mergeResult = merge(cliArguments, over: mergedIndexes)
+        //We merge everything together to get a combined list of keys and values
+        //However, a yaml config can contain every possible option but we don't want to process every possible option
+        //We only want what was provided via arguments or environment
+        var mergeResult = [String: [String: [String]] ]()
+        for (key, _) in environment {
+            if let value = cliMerge[key] {
+                mergeResult[key] = value
+            }
+        }
+        for key in arguments {
+            if let value = cliMerge[key] {
+                mergeResult[key] = value
+            }
+        }
+        
         return mergeResult
     }
     public func merge(_ indexedArguments: [String: [String: [String]] ], over index: [String: [String: [String]] ]?) -> [String: [String: [String]]] {
