@@ -4,7 +4,7 @@
 
 Create and parse command line options for your cli application. Help documentation is auto created for you.
 
-###CliOption
+##CliOption
 
 Implement the CliRunnable protocol and provide some CLIOptions.
 
@@ -16,14 +16,14 @@ This gives your command line application the ability to add some options when yo
 
 `app -o` or `app --option`   
 
-#####CliOption - requiresValue
+###CliOption - requiresValue
 
 You can set the requiresValue property to true or false to specify if the option requires a value or not
 
 `app -o some-value` or `app -o`
 
 
-#####CliOption - action
+###CliOption - action
 
 Set the action to be performed when the option is triggered 
 ```
@@ -31,7 +31,7 @@ public var action: ((CliOption) throws -> Void)?
 ```
 
 
-###CliOption as a Command
+##CliOption as a Command
 You can add sub options in the requiredArguments and optionalArguments arrays to create a command and additional options for the command
 
 ```
@@ -43,7 +43,7 @@ command.add(argument: option, required: false)
 `app custom-command --option`
 
 
-#####CliOption - optionalArguments, requiredArguments
+###CliOption - optionalArguments, requiredArguments
 
 A command can either have optionalArguments or requiredArguments
 
@@ -55,10 +55,10 @@ command.add(argument: option, required: true)
 `app custom-command --alternate-option my-required-value`
 
 
-### Printing Help
+## Printing Help
 Help commands are automatically created from the CliOptions and CliOptionGroups
 
-#### Main Application Help
+### Main Application Help
 `app help` or `app --help` or `app -h` or no options at all `app`
 ```
 App Description
@@ -68,7 +68,7 @@ Custom Commands:
 custom-command	Do something custom
 ```
 
-#### Command Specific Help
+### Command Specific Help
 `app custom-command help`
 ```
 app custom-command [OPTIONS]
@@ -78,7 +78,7 @@ Custom Command
 -a, --alternate-option	Alternate Option
 ```
 
-###CliOptionGroup
+##CliOptionGroup
 if you want to group related commands together for the printed help, use the CliOptionGroup
 
 ```
@@ -109,7 +109,7 @@ scp	Secure copy (remote file copy program)
 
 
 
-### Example CliRunnable struct
+## Example CliRunnable struct
 ```
 struct App : CliRunnable {
     var description: String? = "App Description\n"
