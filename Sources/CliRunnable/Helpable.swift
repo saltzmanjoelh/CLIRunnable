@@ -35,7 +35,7 @@ public struct HelpEntry {
     public func columnLength() -> Int {
         var maxLength = 0
         if let theValue = value {
-            maxLength = theValue.characters.count
+            maxLength = theValue.count
         }
         if let subOptions = options {
             maxLength = subOptions.reduce(maxLength){ (optionLength, optionEntry) -> Int in

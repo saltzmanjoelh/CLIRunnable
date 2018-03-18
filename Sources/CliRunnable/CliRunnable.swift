@@ -343,7 +343,7 @@ extension CliRunnable {
 extension String {
     public var strippingDashPrefix: String {
         let regex = try! NSRegularExpression.init(pattern: "^-*", options: [])
-        return regex.stringByReplacingMatches(in: self, options: [], range: NSRange.init(location: 0, length: self.characters.count), withTemplate: "")
+        return regex.stringByReplacingMatches(in: self, options: [], range: NSRange.init(location: 0, length: self.count), withTemplate: "")
     }
 }
 
