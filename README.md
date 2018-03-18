@@ -16,14 +16,14 @@ This gives your command line application the ability to add some options when yo
 
 `app -o` or `app --option`   
 
-###CliOption - requiresValue
+######CliOption - requiresValue
 
 You can set the requiresValue property to true or false to specify if the option requires a value or not
 
 `app -o some-value` or `app -o`
 
 
-###CliOption - action
+######CliOption - action
 
 Set the action to be performed when the option is triggered 
 ```
@@ -43,7 +43,7 @@ command.add(argument: option, required: false)
 `app custom-command --option`
 
 
-###CliOption - optionalArguments, requiredArguments
+######CliOption - optionalArguments, requiredArguments
 
 A command can either have optionalArguments or requiredArguments
 
@@ -58,7 +58,7 @@ command.add(argument: option, required: true)
 ## Printing Help
 Help commands are automatically created from the CliOptions and CliOptionGroups
 
-### Main Application Help
+###### Main Application Help
 `app help` or `app --help` or `app -h` or no options at all `app`
 ```
 App Description
@@ -68,7 +68,7 @@ Custom Commands:
 custom-command	Do something custom
 ```
 
-### Command Specific Help
+###### Command Specific Help
 `app custom-command help`
 ```
 app custom-command [OPTIONS]
