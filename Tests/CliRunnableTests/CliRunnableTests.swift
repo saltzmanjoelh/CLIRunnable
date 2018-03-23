@@ -223,8 +223,8 @@ class CliRunnableTests: XCTestCase {
         let arguments = ["test-command", commandValue, app.option.keys[0], optionValue]
         
         let result = app.index(option: command,
-                               fromArguments: arguments.flatMap({$0.strippingDashPrefix}),
-                               withKeys: allKeys.flatMap({$0.strippingDashPrefix}))
+                               fromArguments: arguments.compactMap({$0.strippingDashPrefix}),
+                               withKeys: allKeys.compactMap({$0.strippingDashPrefix}))
         
         XCTAssertEqual(result.count, 1)
         XCTAssertNotNil(result[app.command.keys[0]])

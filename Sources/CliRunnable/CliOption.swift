@@ -99,7 +99,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
     }
     public func validateKeys(indexedArguments: [String: [String: [String]]]) throws -> CliOption? {
         //check if the keys have been used in the arguments or environment.
-        let foundKeys = keys.flatMap({ (key: String) -> String? in
+        let foundKeys = keys.compactMap({ (key: String) -> String? in
             if indexedArguments[key] != nil {
                 return key
             }
@@ -122,7 +122,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
         }
         //if it had any optional arguments, get them
         if let optionalArgs = optionalArguments {
-            let validatedArgs = try optionalArgs.flatMap{ try $0.validateKeys(indexedArguments: indexedArguments) }
+            let validatedArgs = try optionalArgs.compactMap{ try $0.validateKeys(indexedArguments: indexedArguments) }
             if validatedArgs.count != optionalArgs.count {
                 //not all optional args were used, return updated version without those args
                 var copy = self

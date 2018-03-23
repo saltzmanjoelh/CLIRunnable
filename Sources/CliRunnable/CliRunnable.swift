@@ -50,7 +50,6 @@ extension CliRunnable {
                                               yamlConfigurationPath: yamlConfigurationPath,
                                               optionGroups: optionGroups)
         
-        
         //We run through all possible options to try and find
         //an option that has valid keys and doesn't throw an error.
         //If a command is found but it's required options aren't, we throw an error
@@ -75,7 +74,10 @@ extension CliRunnable {
      Merges all the possible inputs together. The order of precedence is yaml, environment, cli arguments.
      That means if you have an argument listed in the yaml file and differently as an evironment variable, the env var will be used.
      */
-    public func consolidateArgs(arguments:[String], environment:[String:String], yamlConfigurationPath: String? = nil, optionGroups: [CliOptionGroup]) throws -> [String: [String: [String]]] {
+    public func consolidateArgs(arguments:[String],
+                                environment:[String:String],
+                                yamlConfigurationPath: String? = nil,
+                                optionGroups: [CliOptionGroup]) throws -> [String: [String: [String]]] {
         //index the cli args
         let cliArguments = index(arguments: arguments, using: optionGroups)
         //index yaml args
@@ -175,10 +177,10 @@ extension CliRunnable {
         //we move the found option to index
         var result = [String: [String: [String]] ]()
         //get a list of all possible keys, removing the - or -- from the prefix
-        let allKeys: [String] = optionGroups.flatMap({ $0.options.flatMap({ $0.allKeys.flatMap({ $0.strippingDashPrefix }) }) })
+        let allKeys: [String] = optionGroups.flatMap({ $0.options.flatMap({ $0.allKeys.compactMap({ $0.strippingDashPrefix }) }) })
         optionGroups.forEach({ (optionGroup: CliOptionGroup) in
             optionGroup.options.forEach({ (option: CliOption) in
-                result.merge(dictionaries: index(option: option, fromArguments: arguments.flatMap({ $0.strippingDashPrefix }), withKeys: allKeys))
+                result.merge(dictionaries: index(option: option, fromArguments: arguments.compactMap({ $0.strippingDashPrefix }), withKeys: allKeys))
                 
             })
         })
@@ -280,7 +282,7 @@ extension CliRunnable {
         case .double(let doubleValue):
             return doubleValue
         case .array(let arrayValue):
-            return arrayValue.flatMap({ decode(yamlValue: $0) })
+            return arrayValue.compactMap({ decode(yamlValue: $0) })
         case .dictionary(let dictionaryValue):
             return decode(yamlDictionary: dictionaryValue)
         default:
@@ -322,7 +324,7 @@ extension CliRunnable {
             return nil
         }
         //find the first root option (command) that matches the string
-        return cliOptionGroups.flatMap{
+        return cliOptionGroups.compactMap{
             if let option = $0.options.first(where: { $0.keys.contains(arguments[1]) }) {
                 return option
             }

@@ -15,7 +15,7 @@ public struct CliOptionGroup {
     public let description: String
     public var options = [CliOption]()
     public func filterInvalidKeys(indexedArguments: [String: [String: [String]]]) throws -> [CliOption] {
-        return try options.flatMap{ try $0.validateKeys(indexedArguments: indexedArguments) }
+        return try options.compactMap{ try $0.validateKeys(indexedArguments: indexedArguments) }
     }
     public init(description:String, options:[CliOption]? = nil){
         self.description = description
