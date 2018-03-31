@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import ProcessRunner
 
 /**
  A CliOption can either be a command or a simple option.
@@ -22,7 +23,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
     public var requiresValue: Bool = true //as in if the key is -a does it require a value after it (ps `-a` does not require a value)
     public var defaultValue: String?
     public var values: [String]?
-    public var action: ((CliOption) throws -> Void)?
+    public var action: ((CliOption) throws -> Any)?
     
     public init(keys:[String], description:String, usage:String?, requiresValue:Bool, defaultValue:String?, optionalArguments: [CliOption]? = nil, requiredArguments: [CliOption]? = nil) {
         self.keys = keys

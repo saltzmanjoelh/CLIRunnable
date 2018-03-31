@@ -8,7 +8,7 @@
 
 import Foundation
 import Yaml
-
+import ProcessRunner
 
 public protocol CliRunnable: Helpable {
     var appName: String { get }
@@ -43,7 +43,7 @@ public enum CliRunnableError: Error, CustomStringConvertible {
 extension CliRunnable {
     
     
-    public func run(arguments:[String], environment:[String:String], yamlConfigurationPath: String? = nil) throws {
+    public func run(arguments:[String], environment:[String:String], yamlConfigurationPath: String? = nil) throws -> [ProcessResult] {
         let optionGroups = cliOptionGroups
         let mergedIndex = try consolidateArgs(arguments: arguments,
                                               environment: environment,
@@ -54,7 +54,7 @@ extension CliRunnable {
         //an option that has valid keys and doesn't throw an error.
         //If a command is found but it's required options aren't, we throw an error
         let parsedOptions = try parse(optionGroups: optionGroups, indexedArguments: mergedIndex)
-        
+        var results = [ProcessResult]()
         if parsedOptions.count > 0,
             let lastArgument = arguments.last,
             !helpKeys().contains(lastArgument),
@@ -63,12 +63,15 @@ extension CliRunnable {
             
             try parsedOptions.forEach{
                 if let action = $0.action {
-                    try action($0) //calling self.action?
+                    if let result = try action($0) as? ProcessResult {
+                        results.append(result)
+                    }
                 }
             }
         } else {
             printHelp(cliOptionGroups: optionGroups, arguments: arguments)
         }
+        return results
     }
     /**
      Merges all the possible inputs together. The order of precedence is yaml, environment, cli arguments.
