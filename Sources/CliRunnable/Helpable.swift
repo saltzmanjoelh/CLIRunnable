@@ -76,7 +76,7 @@ public struct HelpEntry {
         self.value = option.keys.joined(separator: ", ")
         var description = "\(option.description)"
         if let defaultValue = option.defaultValue {
-            description += ". Defaults to: \(defaultValue)."
+            description += " Defaults to: \(defaultValue)."
         }
         self.description = description
         if includeSubOptions {
