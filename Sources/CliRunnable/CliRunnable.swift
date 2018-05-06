@@ -42,7 +42,7 @@ public enum CliRunnableError: Error, CustomStringConvertible {
 
 extension CliRunnable {
     
-    
+    @discardableResult
     public func run(arguments:[String], environment:[String:String], yamlConfigurationPath: String? = nil) throws -> [ProcessResult] {
         let optionGroups = cliOptionGroups
         let mergedIndex = try consolidateArgs(arguments: arguments,
