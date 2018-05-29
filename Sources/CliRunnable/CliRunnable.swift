@@ -234,8 +234,46 @@ extension CliRunnable {
     }
     
 }
-// MARK: Yaml Parsing
+// MARK: Yaml
 extension CliRunnable {
+    public func getYamlPath(possibleKeys: [String], args: [String], env: [String: String]) -> String {
+        var path = ProcessInfo.processInfo.environment["PWD"] ?? ""
+        if let argPath = getYamlPathFromArgs(possibleKeys: possibleKeys, args: args) {
+            path = argPath
+        }
+        if let envPath = getYamlPathFromEnv(possibleKeys: possibleKeys, env: env) {
+            path = envPath
+        }
+        return path
+    }
+    public func getYamlPathFromArgs(possibleKeys: [String], args: [String]) -> String? {
+        var path: String?
+        //skip first arg, it's app path
+        if args.count > 1 {
+            for i in 1..<args.count-1 {//-1 last index but the last index won't have a value after it. -2
+                for key in possibleKeys {
+                    if args[i] == key {
+                        path = args[i+1]
+                    }
+                }
+            }
+            if let result = path {
+                return result
+            }
+        }
+        return nil
+    }
+    public func getYamlPathFromEnv(possibleKeys: [String], env: [String: String]) -> String? {
+        let envKeys = env.keys
+        for key in possibleKeys {
+            if envKeys.contains(key),
+                let value = env[key] {
+                return value
+            }
+        }
+        return nil
+    }
+    
     public func parse(yamlConfigurationPath: String?) throws -> [String: [String: [String]]]? {
         guard let path = yamlConfigurationPath,
             FileManager.default.fileExists(atPath: path)
