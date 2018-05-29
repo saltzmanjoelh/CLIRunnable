@@ -138,7 +138,7 @@ extension CliRunnable {
     //If they (the CliOption) are optional and aren't fulfiled, they will be filtered out
     public func parse(optionGroups:[CliOptionGroup], indexedArguments: [String: [String: [String]]]) throws -> [CliOption] {
         //get all the valid keys
-        let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(indexedArguments: indexedArguments) }
+        let options = try cliOptionGroups.flatMap{ try $0.filterInvalidKeys(indexedArguments: indexedArguments, helpKeys: helpKeys()) }
         let allKeys = options.flatMap{ $0.allKeys }
         
         //we pass in allKeys as a list of possible delimiters so that we can parse out the CLIOption's keys from the list (delimiter1 value targetDelimiter value delimiter2)
@@ -314,6 +314,7 @@ extension CliRunnable {
         var helpEntries = [HelpEntry]()
         //include the usage before the option
         if let optionUsage = option.usage {
+            //print(optionUsage)
             helpEntries.append(HelpEntry(description: "Usage: \(optionUsage)\n"))
         }
         //add the option, it's required and optional args are added automatically

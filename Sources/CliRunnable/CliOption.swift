@@ -98,9 +98,12 @@ public struct CliOption : Equatable, CustomStringConvertible {
             optionalArguments?.append(argument)
         }
     }
-    public func validateKeys(indexedArguments: [String: [String: [String]]]) throws -> CliOption? {
+    public func validateKeys(indexedArguments: [String: [String: [String]]], helpKeys: [String]) throws -> CliOption? {
         //check if the keys have been used in the arguments or environment.
         let foundKeys = keys.compactMap({ (key: String) -> String? in
+            if helpKeys.contains(key) {
+                return nil
+            }
             if indexedArguments[key] != nil {
                 return key
             }
@@ -112,10 +115,17 @@ public struct CliOption : Equatable, CustomStringConvertible {
             return nil
         })
         guard foundKeys.count > 0 else { return nil }
+        //Check for helpKeys
+        for key in foundKeys {
+            if let args: [String] = indexedArguments[key]?[CommandArgsKey],
+                Set<String>.init(helpKeys).intersection(Set<String>(args)).count > 0{
+                return nil
+            }
+        }
         //this option was used, make sure it has requiredArguments fulfilled
         if let requiredArgs = requiredArguments {
             for requiredOption in requiredArgs {
-                if try requiredOption.validateKeys(indexedArguments: indexedArguments) == nil && requiredOption.defaultValue == nil {
+                if try requiredOption.validateKeys(indexedArguments: indexedArguments, helpKeys: helpKeys) == nil && requiredOption.defaultValue == nil {
                     //TODO: have better error messages than "You didn't provide: ["-v", "--version", "GIT_TAG_VERSION"]", we need to know if it's a command or option
                     throw CliRunnableError.missingRequiredArgument(keys: requiredOption.keys)
                 }
@@ -123,7 +133,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
         }
         //if it had any optional arguments, get them
         if let optionalArgs = optionalArguments {
-            let validatedArgs = try optionalArgs.compactMap{ try $0.validateKeys(indexedArguments: indexedArguments) }
+            let validatedArgs = try optionalArgs.compactMap{ try $0.validateKeys(indexedArguments: indexedArguments, helpKeys: helpKeys) }
             if validatedArgs.count != optionalArgs.count {
                 //not all optional args were used, return updated version without those args
                 var copy = self
