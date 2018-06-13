@@ -157,7 +157,7 @@ public struct CliOption : Equatable, CustomStringConvertible {
             }
         }
         
-        if copy.values == nil && requiresValue {
+        if (copy.values == nil || copy.values?.count == 0) && requiresValue {
             if let defaultValue = self.defaultValue {
                 copy.values = [defaultValue]
             }else{

@@ -125,7 +125,10 @@ extension CliRunnable {
             //top level is command, iterate command args
             var commandIndex = result[command] ?? [String: [String]]()
             for (key, value) in commandValues {
-                commandIndex[key] = value
+                if commandIndex[key] == nil ||
+                    (value.count > 0 && value != commandIndex[key]) {//make sure empty cli args don't overwrite yaml args
+                    commandIndex[key] = value
+                }
             }
             result[command] = commandIndex
         }
