@@ -133,7 +133,7 @@ extension CliRunnable {
             var commandIndex = result[command] ?? [String: [String]]()
             for (key, value) in commandValues {
                 if commandIndex[key] == nil ||
-                    (value.count > 0 && value.count != commandIndex[key]?.count) {//make sure empty cli args don't overwrite yaml args
+                    (value.count > 0 && value != commandIndex[key]) {//make sure empty cli args don't overwrite yaml args
                     commandIndex[key] = value
                 }
             }
