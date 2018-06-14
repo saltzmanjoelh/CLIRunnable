@@ -53,7 +53,14 @@ extension CliRunnable {
         //We run through all possible options to try and find
         //an option that has valid keys and doesn't throw an error.
         //If a command is found but it's required options aren't, we throw an error
-        let parsedOptions = try parse(optionGroups: optionGroups, indexedArguments: mergedIndex)
+        var parsedOptions = [CliOption]()
+        do {
+            parsedOptions = try parse(optionGroups: optionGroups, indexedArguments: mergedIndex)
+        }catch CliRunnableError.missingRequiredValue(_) {
+            printHelp(cliOptionGroups: optionGroups, arguments: arguments+["help"])
+            return []
+        }
+        
         var results = [ProcessResult]()
         if parsedOptions.count > 0,
             let lastArgument = arguments.last,
@@ -126,7 +133,7 @@ extension CliRunnable {
             var commandIndex = result[command] ?? [String: [String]]()
             for (key, value) in commandValues {
                 if commandIndex[key] == nil ||
-                    (value.count > 0 && value != commandIndex[key]) {//make sure empty cli args don't overwrite yaml args
+                    (value.count > 0 && value.count != commandIndex[key]?.count) {//make sure empty cli args don't overwrite yaml args
                     commandIndex[key] = value
                 }
             }
