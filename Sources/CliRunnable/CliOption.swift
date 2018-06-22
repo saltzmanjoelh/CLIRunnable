@@ -143,19 +143,21 @@ public struct CliOption : Equatable, CustomStringConvertible {
         }
         return self
     }
-    
-    public func parseValues(using delimiters:[String], indexedArguments: [String: [String: [String]]]) throws -> CliOption {
-        var copy = self
-        
+    public func valueForKeys(indexedArguments: [String: [String: [String]]]) -> [String]? {
         for (commandKey, args) in indexedArguments {
             for (key, values) in args {
                 if (key == CommandArgsKey && self.keys.contains(commandKey)) ||
                     self.keys.contains(key){
-                    copy.values = values
-                    break
+                    return values
                 }
             }
         }
+        return nil
+    }
+    public func parseValues(using delimiters:[String], indexedArguments: [String: [String: [String]]]) throws -> CliOption {
+        var copy = self
+        
+        copy.values = valueForKeys(indexedArguments: indexedArguments)
         
         if (copy.values == nil || copy.values?.count == 0) && requiresValue {
             if let defaultValue = self.defaultValue {

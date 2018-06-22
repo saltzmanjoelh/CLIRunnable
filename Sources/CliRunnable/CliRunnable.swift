@@ -49,7 +49,6 @@ extension CliRunnable {
                                               environment: environment,
                                               yamlConfigurationPath: yamlConfigurationPath,
                                               optionGroups: optionGroups)
-        
         //We run through all possible options to try and find
         //an option that has valid keys and doesn't throw an error.
         //If a command is found but it's required options aren't, we throw an error
